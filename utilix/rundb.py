@@ -503,7 +503,7 @@ def test_collection(collection, url, raise_errors=False):
 def pymongo_collection(collection='runs', **kwargs):
     # default collection is the XENONnT runsDB
     # for 1T, pass collection='runs_new'
-    print("WARNING: pymongo_collection is deprecated. Please use nt_collection or 1t_collection instead")
+    print("WARNING: pymongo_collection is deprecated. Please use xent_collection or xe1t_collection instead")
     uri = 'mongodb://{user}:{pw}@{url}'
     url = kwargs.get('url')
     user = kwargs.get('user')
