@@ -180,8 +180,9 @@ class DB():
         return requests.put(PREFIX + url, data=data, headers=self.headers)
 
     @Responder
-    def _post(self, url, data):
-        return requests.post(PREFIX + url, data=data, headers=self.headers)
+    def _post(self, url, data, metadata=None):
+        # DOES THIS WORK?
+        return requests.post(PREFIX + url, data=data, metadata=None, headers=self.headers)
 
     @Responder
     def _delete(self, url, data):
@@ -387,34 +388,64 @@ class DB():
         url = '/mc/documents/'
         return self._delete(url, data=doc)
 
-    # TODO need to be careful about versioning!!!
-    def download_file(self, filename, save_dir='./', force=False):
-        """Downloads file from GridFS"""
-        url = f'/files/{filename}'
-        os.makedirs(save_dir, exist_ok=True)
-        write_to = os.path.join(save_dir, filename)
-        if os.path.exists(write_to) and not force:
-            logger.debug(f"{filename} already exists at {write_to} and the 'force' flag is not set.")
-        else:
-            logger.debug(f"Downloading {filename} from gridfs...")
-            response = self._get(url)
-            with open(write_to, 'wb') as f:
-                f.write(response.content)
-            logger.debug(f'DONE. {filename} downloaded to {write_to}')
-        return write_to
+    # def download_file(self, filename, save_dir='./', force=False):
+    #     """Downloads file from GridFS"""
+    #     url = f'/files/{filename}'
+    #     os.makedirs(save_dir, exist_ok=True)
+    #     write_to = os.path.join(save_dir, filename)
+    #     if os.path.exists(write_to) and not force:
+    #         logger.debug(f"{filename} already exists at {write_to} and the 'force' flag is not set.")
+    #     else:
+    #         logger.debug(f"Downloading {filename} from gridfs...")
+    #         response = self._get(url)
+    #         with open(write_to, 'wb') as f:
+    #             f.write(response.content)
+    #         logger.debug(f'DONE. {filename} downloaded to {write_to}')
+    #     return write_to
+    #
+    # def load_file(self, filename, save_dir=None, force=False):
+    #     if save_dir is None:
+    #         save_dir = os.path.join(os.environ.get("HOME"), '.gridfs_cache')
+    #     path = self.download_file(filename, save_dir=save_dir, force=force)
+    #     return io.read_file(path)
+    #
+    # def upload_file(self, filepath):
+    #     with open(filepath, 'rb') as f:
+    #         fb = f.read()
+    #     filename = os.path.basename(filepath)
+    #     url = f'/files/{filename}'
+    #     return self._post(url, data=fb)
 
-    def load_file(self, filename, save_dir=None, force=False):
-        if save_dir is None:
-            save_dir = os.path.join(os.environ.get("HOME"), '.gridfs_cache')
-        path = self.download_file(filename, save_dir=save_dir, force=force)
-        return io.read_file(path)
+    def count_documents(self, query: dict)->int:
+        """Perform collection.count_documents on the fs.files-collection using the query"""
+        """<URL MAGIC>"""
+        response = json.loads(self._get(url).text)
+        return response.get('results', 0)
 
-    def upload_file(self, filepath):
+    def file_find(self, projection:dict)->dict:
+        """Perform collection.find(projection=projection) on the fs.files-collection"""
+        """<URL MAGIC>"""
+        response = json.loads(self._get(url).text)
+        return response.get('results', {})
+
+    def get_last_version(self, query: dict):
+        """Perform grid_fs.get_last_version(**query) on gridfs"""
+        """<URL MAGIC>"""
+        response = self._get(url)
+        return response.get('results', {})
+
+    def upload_file(self, filepath, metadata: dict):
+        """Perform grid_fs.put(filepath, **metadata) on gridfs"""
         with open(filepath, 'rb') as f:
             fb = f.read()
-        filename = os.path.basename(filepath)
+        if metadata is None:
+            metadata = {}
+        if 'config_name' not in metadata:
+            # Possibly disable this one daq? Not today...
+            raise NotImplementedError(f'Metadata should contain "config_name":{metadata}')
+        filename = metadata.get('config_name', os.path.basename(filepath))
         url = f'/files/{filename}'
-        return self._post(url, data=fb)
+        return self._post(url, data=fb, metadata=metadata)
 
     def delete_file(self, filename):
         resp = input(f"HUGE GIGANTIC CRITICAL WARNING: this will delete all files of the name {filename} in GridFS. "
