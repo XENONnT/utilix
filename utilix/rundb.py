@@ -5,12 +5,12 @@ import json
 import datetime
 import logging
 import pymongo
-from utilix import uconfig
 from warnings import warn
 from threading import Timer
 import sys
 import multiprocessing
 
+from . import uconfig
 from . import io
 
 # Config the logger:
@@ -388,33 +388,36 @@ class DB():
         url = '/mc/documents/'
         return self._delete(url, data=doc)
 
-    # def download_file(self, filename, save_dir='./', force=False):
-    #     """Downloads file from GridFS"""
-    #     url = f'/files/{filename}'
-    #     os.makedirs(save_dir, exist_ok=True)
-    #     write_to = os.path.join(save_dir, filename)
-    #     if os.path.exists(write_to) and not force:
-    #         logger.debug(f"{filename} already exists at {write_to} and the 'force' flag is not set.")
-    #     else:
-    #         logger.debug(f"Downloading {filename} from gridfs...")
-    #         response = self._get(url)
-    #         with open(write_to, 'wb') as f:
-    #             f.write(response.content)
-    #         logger.debug(f'DONE. {filename} downloaded to {write_to}')
-    #     return write_to
-    #
-    # def load_file(self, filename, save_dir=None, force=False):
-    #     if save_dir is None:
-    #         save_dir = os.path.join(os.environ.get("HOME"), '.gridfs_cache')
-    #     path = self.download_file(filename, save_dir=save_dir, force=force)
-    #     return io.read_file(path)
-    #
-    # def upload_file(self, filepath):
-    #     with open(filepath, 'rb') as f:
-    #         fb = f.read()
-    #     filename = os.path.basename(filepath)
-    #     url = f'/files/{filename}'
-    #     return self._post(url, data=fb)
+    def download_file(self, filename, save_dir='./', force=False):
+        """Downloads file from GridFS"""
+        url = f'/files/{filename}'
+        os.makedirs(save_dir, exist_ok=True)
+        write_to = os.path.join(save_dir, filename)
+        if os.path.exists(write_to) and not force:
+            logger.debug(f"{filename} already exists at {write_to} and the 'force' flag is not set.")
+        else:
+            logger.debug(f"Downloading {filename} from gridfs...")
+            response = self._get(url)
+            with open(write_to, 'wb') as f:
+                f.write(response.content)
+            logger.debug(f'DONE. {filename} downloaded to {write_to}')
+        return write_to
+
+    def load_file(self, filename, save_dir=None, force=False):
+        if save_dir is None:
+            save_dir = os.path.join(os.environ.get("HOME"), '.gridfs_cache')
+        path = self.download_file(filename, save_dir=save_dir, force=force)
+        return io.read_file(path)
+
+    def upload_file(self, filepath, filename=None):
+        with open(filepath, 'rb') as f:
+            fb = f.read()
+        # if no specific filename passed, just get it from the path
+        if not filename:
+            filename = os.path.basename(filepath)
+        url = f'/files/{filename}'
+        print(url)
+        return self._post(url, data=fb)
 
     def get_files(self, query: dict, projection=None):
         """Do a general query on the fs.files collection"""
@@ -430,27 +433,8 @@ class DB():
     def count_files(self, query: dict)->int:
         """Perform colection.count_documents on the fs.files-collection using the query"""
         """<URL MAGIC>"""
-        docs = self.get_documents(query)
+        docs = self.get_files(query)
         return len(docs)
-
-    def get_last_version(self, query: dict):
-        """Perform grid_fs.get_last_version(**query) on gridfs"""
-        """<URL MAGIC>"""
-        response = self._get(url)
-        return response.get('results', {})
-
-    def upload_file(self, filepath, metadata: dict):
-        """Perform grid_fs.put(filepath, **metadata) on gridfs"""
-        with open(filepath, 'rb') as f:
-            fb = f.read()
-        if metadata is None:
-            metadata = {}
-        if 'config_name' not in metadata:
-            # Possibly disable this one daq? Not today...
-            raise NotImplementedError(f'Metadata should contain "config_name":{metadata}')
-        filename = metadata.get('config_name', os.path.basename(filepath))
-        url = f'/files/{filename}'
-        return self._post(url, data=fb, metadata=metadata)
 
     def delete_file(self, filename):
         resp = input(f"HUGE GIGANTIC CRITICAL WARNING: this will delete all files of the name {filename} in GridFS. "
@@ -460,6 +444,12 @@ class DB():
             return
         url = f'/files/{filename}'
         return self._delete(url, data="")
+
+    def get_file_md5(self, filename):
+        url = f"/files/{filename}/md5"
+        response = self._get(url).json()
+        return response['results']
+
 
 
 class PyMongoCannotConnect(Exception):
@@ -521,29 +511,23 @@ def pymongo_collection(collection='runs', **kwargs):
     return coll
 
 
-def _collection(experiment, collection, **kwargs):
+def _collection(experiment, collection, url=None, user=None, password=None, database=None):
     if experiment not in ['xe1t', 'xent']:
         raise ValueError(f"experiment must be 'xe1t' or 'xent'. You passed f{experiment}")
-    uri = 'mongodb://{user}:{pw}@{url}'
-    url = kwargs.get('url')
-    user = kwargs.get('user')
-    pw = kwargs.get('password')
-    database = kwargs.get('database')
 
     if not url:
         url = uconfig.get('RunDB', f'{experiment}_url')
     if not user:
         user = uconfig.get('RunDB', f'{experiment}_user')
-    if not pw:
-        pw = uconfig.get('RunDB', f'{experiment}_password')
+    if not password:
+        password = uconfig.get('RunDB', f'{experiment}_password')
     if not database:
         database = uconfig.get('RunDB', f'{experiment}_database')
 
-    uri = uri.format(user=user, pw=pw, url=url)
+    uri = f"mongodb://{user}:{password}@{url}"
     c = pymongo.MongoClient(uri, readPreference='secondaryPreferred')
     DB = c[database]
     coll = DB[collection]
-
     return coll
 
 
