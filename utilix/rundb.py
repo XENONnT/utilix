@@ -180,9 +180,9 @@ class DB():
         return requests.put(PREFIX + url, data=data, headers=self.headers)
 
     @Responder
-    def _post(self, url, data, metadata=None):
+    def _post(self, url, data):
         # DOES THIS WORK?
-        return requests.post(PREFIX + url, data=data, metadata=None, headers=self.headers)
+        return requests.post(PREFIX + url, data=data, headers=self.headers)
 
     @Responder
     def _delete(self, url, data):
@@ -416,17 +416,22 @@ class DB():
     #     url = f'/files/{filename}'
     #     return self._post(url, data=fb)
 
-    def count_documents(self, query: dict)->int:
-        """Perform collection.count_documents on the fs.files-collection using the query"""
-        """<URL MAGIC>"""
-        response = json.loads(self._get(url).text)
-        return response.get('results', 0)
+    def get_files(self, query: dict, projection=None):
+        """Do a general query on the fs.files collection"""
+        url = '/files/query'
+        # the projection needs to be a dict for the flask app
+        if projection is None:
+            projection = {}
+        data = json.dumps(dict(query=query, projection=projection))
+        result = self._post(url, data=data)
+        response = result.json()
+        return response.get('results', [])
 
-    def file_find(self, projection:dict)->dict:
-        """Perform collection.find(projection=projection) on the fs.files-collection"""
+    def count_files(self, query: dict)->int:
+        """Perform colection.count_documents on the fs.files-collection using the query"""
         """<URL MAGIC>"""
-        response = json.loads(self._get(url).text)
-        return response.get('results', {})
+        docs = self.get_documents(query)
+        return len(docs)
 
     def get_last_version(self, query: dict):
         """Perform grid_fs.get_last_version(**query) on gridfs"""
