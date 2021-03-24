@@ -416,7 +416,6 @@ class DB():
         if not filename:
             filename = os.path.basename(filepath)
         url = f'/files/{filename}'
-        print(url)
         return self._post(url, data=fb)
 
     def get_files(self, query: dict, projection=None):
