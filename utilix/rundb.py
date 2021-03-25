@@ -6,9 +6,7 @@ import datetime
 import logging
 import pymongo
 from warnings import warn
-from threading import Timer
-import sys
-import multiprocessing
+import time
 
 from . import uconfig
 from . import io
@@ -24,6 +22,10 @@ logger.addHandler(ch)
 
 PREFIX = uconfig.get('RunDB', 'rundb_api_url')
 BASE_HEADERS = {'Content-Type': "application/json", 'Cache-Control': "no-cache"}
+
+
+class NewTokenError(Exception):
+    pass
 
 
 def Responder(func):
@@ -102,8 +104,23 @@ class Token:
         data = json.dumps({"username": username,
                            "password": pw})
         logger.debug('Creating a new token: doing API call now')
-        response = requests.post(path, data=data, headers=BASE_HEADERS)
-        response_json = json.loads(response.text)
+        # try making a new token 3 times
+        success = False
+        for _try in range(3):
+            try:
+                response = requests.post(path, data=data, headers=BASE_HEADERS)
+                response_json = json.loads(response.text)
+                success = True
+                break
+            except json.decoder.JSONDecodeError:
+                logger.info(f"Login attempt #{_try+1} failed. "
+                            f"Sleeping for {10**_try} seconds and trying again.")
+                time.sleep(10**_try)
+
+        if not success:
+            raise NewTokenError("Error in creating a token.")
+
+
         logger.debug(f'The response contains these keys: {list(response_json.keys())}')
         token = response_json.get('access_token', 'CALL_FAILED')
         if token == 'CALL_FAILED':
