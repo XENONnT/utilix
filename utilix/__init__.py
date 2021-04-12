@@ -11,7 +11,7 @@ except FileNotFoundError as e:
          f'access the database. See https://github.com/XENONnT/utilix.')
 
 if uconfig is not None and uconfig.getboolean('utilix', 'initialize_db_on_import',
-                                              fallback=False):
+                                              fallback=True):
     from utilix.rundb import DB
     db = DB()
 else:
