@@ -214,10 +214,11 @@ class Token:
         headers['Authorization'] = f"Bearer {self.token_string}"
         logger.debug(f"Refreshing your token with API call {url}")
         response = requests.get(url, headers=headers)
-        logger.debug(f"The response was {response.text}")
+        response_json = json.loads(response.text)
+        logger.debug(f'The response contains these keys: {list(response_json.keys())}')
         # if renew fails, try logging back in
         if response.status_code != 200:
-            if json.loads(response.text)['error'] != 'EarlyRefreshError':
+            if response_json['error'] != 'EarlyRefreshError':
                 logger.warning("Refreshing token failed for some reason, so making a  new one")
                 self.new_token()
                 self.creation_time = datetime.datetime.now().timestamp()
