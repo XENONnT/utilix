@@ -8,17 +8,9 @@ import pymongo
 from warnings import warn
 import time
 
-from . import uconfig
-from . import io
+from . import uconfig, io, logger
 
 # Config the logger:
-logger = logging.getLogger("utilix")
-ch = logging.StreamHandler()
-ch.setLevel(uconfig.logging_level)
-logger.setLevel(uconfig.logging_level)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
 
 PREFIX = uconfig.get('RunDB', 'rundb_api_url')
 BASE_HEADERS = {'Content-Type': "application/json", 'Cache-Control': "no-cache"}
@@ -90,7 +82,8 @@ class Token:
 
         # refresh if needed
         if not self.is_valid:
-            self.refresh()
+            self.new_token()
+            #self.refresh()
         else:
             logger.debug("Token is valid. Not refreshing")
 
