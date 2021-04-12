@@ -1,10 +1,21 @@
 __version__ = '0.4.1'
-# instantiate here so we just do it once
+
 from warnings import warn
+import logging
+
 
 try:
     from utilix.config import Config
     uconfig = Config()
+
+    logger = logging.getLogger("utilix")
+    ch = logging.StreamHandler()
+    ch.setLevel(uconfig.logging_level)
+    logger.setLevel(uconfig.logging_level)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
 except FileNotFoundError as e:
     uconfig = None
     warn(f'Utilix cannot find config file:\n {e}\nWithout it, you cannot '
@@ -19,3 +30,5 @@ else:
     print("If you want to initialize automatically on import, add the following to your utilix config:\n\n"
           "[utilix]\n"
           "initialize_db_on_import=true\n")
+
+from . import mongo_files
