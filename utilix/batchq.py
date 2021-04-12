@@ -18,7 +18,7 @@ sbatch_template = """#!/bin/bash
 """
 
 SINGULARITY_DIR = '/project2/lgrandi/xenonnt/singularity-images'
-TMPDIR = os.path.join(os.environ.get('SCRATCH'), 'tmp')
+TMPDIR = os.path.join(os.environ.get('SCRATCH', '.'), 'tmp')
 
 
 def make_executable(path):

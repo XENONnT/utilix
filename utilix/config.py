@@ -1,8 +1,9 @@
 import os
 import configparser
-import logging
+from . import _setup_logger
 
-logger = logging.getLogger("utilix")
+
+logger = _setup_logger("WARNING")
 
 
 class EnvInterpolation(configparser.BasicInterpolation):
@@ -26,6 +27,7 @@ class Config():
     class __Config(configparser.ConfigParser):
 
         def __init__(self):
+            config_file_path = None
 
             if 'XENON_CONFIG' not in os.environ:
                 logger.info('$XENON_CONFIG is not defined in the environment')
@@ -49,11 +51,12 @@ class Config():
                 config_file_path = home_config
 
             else:
-                raise FileNotFoundError(f"Could not load a configuration file. "
-                                        f"You can create one at {home_config}, or set a custom path using\n\n"
-                                        f"export XENON_CONFIG=path/to/your/config\n")
+                logger.warning(f"Could not load a configuration file. "
+                     f"You can create one at {home_config}, or set a custom path using\n\n"
+                     f"export XENON_CONFIG=path/to/your/config\n")
 
-            logger.debug('Loading configuration from %s' % (config_file_path))
+            if config_file_path:
+                logger.debug('Loading configuration from %s' % (config_file_path))
             configparser.ConfigParser.__init__(self, interpolation=EnvInterpolation())
 
             self.config_path = config_file_path
@@ -61,8 +64,13 @@ class Config():
             try:
                 self.read_file(open(config_file_path), 'r')
             except FileNotFoundError as e:
-                raise RuntimeError(
-                    'Unable to open %s. Please see the README for an example configuration' % (config_file_path)) from e
+                if config_file_path is not None:
+                    raise RuntimeError(f'Unable to open {config_file_path}. Please see the README for an example configuration') from e
+            except TypeError:
+                if config_file_path is None:
+                    pass
+                else:
+                    raise
 
         def get_list(self, category, key):
             list_string = self.get(category, key)
