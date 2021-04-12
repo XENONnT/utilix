@@ -20,6 +20,9 @@ class NewTokenError(Exception):
     pass
 
 
+class APIError(Exception):
+    pass
+
 def Responder(func):
     def func_wrapper(*args, **kwargs):
         st = func(*args, **kwargs)
@@ -31,7 +34,7 @@ def Responder(func):
             ))
 
             if st.status_code == 401:
-                logger.error(
+                raise APIError(
                     "Error 401 is an authentication error. This is likely an issue with your token. "
                     "Can you do 'rm ~/.dbtoken' and try again? ")
         return st
@@ -85,7 +88,7 @@ class Token:
             self.new_token()
             #self.refresh()
         else:
-            logger.debug("Token is valid. Not refreshing")
+            logger.debug("Token is valid.")
 
     def __call__(self):
         return self.token_string
