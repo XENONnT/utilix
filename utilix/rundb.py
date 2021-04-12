@@ -5,8 +5,11 @@ import json
 import datetime
 import logging
 import pymongo
-from utilix import uconfig
 from warnings import warn
+import time
+
+from . import uconfig
+from . import io
 
 # Config the logger:
 logger = logging.getLogger("utilix")
@@ -21,107 +24,24 @@ PREFIX = uconfig.get('RunDB', 'rundb_api_url')
 BASE_HEADERS = {'Content-Type': "application/json", 'Cache-Control': "no-cache"}
 
 
+class NewTokenError(Exception):
+    pass
+
+
 def Responder(func):
-    def LookUp():
-        return_dict = {
-            # taken from https://github.com/kennethreitz/requests/blob/master/requests/status_codes.py
-            # Informational.
-            100: ('continue',),
-            101: ('switching_protocols',),
-            102: ('processing',),
-            103: ('checkpoint',),
-            122: ('uri_too_long', 'request_uri_too_long'),
-            200: ('ok', 'okay', 'all_ok', 'all_okay', 'all_good', '\\o/', '✓'),
-            201: ('created',),
-            202: ('accepted',),
-            203: ('non_authoritative_info', 'non_authoritative_information'),
-            204: ('no_content',),
-            205: ('reset_content', 'reset'),
-            206: ('partial_content', 'partial'),
-            207: ('multi_status', 'multiple_status', 'multi_stati', 'multiple_stati'),
-            208: ('already_reported',),
-            226: ('im_used',),
-
-            # Redirection.
-            300: ('multiple_choices',),
-            301: ('moved_permanently', 'moved', '\\o-'),
-            302: ('found',),
-            303: ('see_other', 'other'),
-            304: ('not_modified',),
-            305: ('use_proxy',),
-            306: ('switch_proxy',),
-            307: ('temporary_redirect', 'temporary_moved', 'temporary'),
-            308: ('permanent_redirect',
-                  'resume_incomplete', 'resume',),  # These 2 to be removed in 3.0
-
-            # Client Error.
-            400: ('bad_request', 'bad'),
-            401: ('unauthorized',),
-            402: ('payment_required', 'payment'),
-            403: ('forbidden',),
-            404: ('not_found', '-o-'),
-            405: ('method_not_allowed', 'not_allowed'),
-            406: ('not_acceptable',),
-            407: ('proxy_authentication_required', 'proxy_auth', 'proxy_authentication'),
-            408: ('request_timeout', 'timeout'),
-            409: ('conflict',),
-            410: ('gone',),
-            411: ('length_required',),
-            412: ('precondition_failed', 'precondition'),
-            413: ('request_entity_too_large',),
-            414: ('request_uri_too_large',),
-            415: ('unsupported_media_type', 'unsupported_media', 'media_type'),
-            416: ('requested_range_not_satisfiable', 'requested_range', 'range_not_satisfiable'),
-            417: ('expectation_failed',),
-            418: ('im_a_teapot', 'teapot', 'i_am_a_teapot'),
-            421: ('misdirected_request',),
-            422: ('unprocessable_entity', 'unprocessable'),
-            423: ('locked',),
-            424: ('failed_dependency', 'dependency'),
-            425: ('unordered_collection', 'unordered'),
-            426: ('upgrade_required', 'upgrade'),
-            428: ('precondition_required', 'precondition'),
-            429: ('too_many_requests', 'too_many'),
-            431: ('header_fields_too_large', 'fields_too_large'),
-            444: ('no_response', 'none'),
-            449: ('retry_with', 'retry'),
-            450: ('blocked_by_windows_parental_controls', 'parental_controls'),
-            451: ('unavailable_for_legal_reasons', 'legal_reasons'),
-            499: ('client_closed_request',),
-
-            # Server Error.
-            500: ('internal_server_error', 'server_error', '/o\\', '✗'),
-            501: ('not_implemented',),
-            502: ('bad_gateway',),
-            503: ('service_unavailable', 'unavailable'),
-            504: ('gateway_timeout',),
-            505: ('http_version_not_supported', 'http_version'),
-            506: ('variant_also_negotiates',),
-            507: ('insufficient_storage',),
-            509: ('bandwidth_limit_exceeded', 'bandwidth'),
-            510: ('not_extended',),
-            511: ('network_authentication_required', 'network_auth', 'network_authentication'),
-        }
-        return return_dict
-
     def func_wrapper(*args, **kwargs):
         st = func(*args, **kwargs)
         if st.status_code != 200:
-            logger.error("API Call was {2}: HTTP(s) request says: {0} (Code {1})".format(
-                LookUp()[st.status_code][0],
+            logger.error("\n\tAPI Call was {0}\n\tReturn code: {1}\n\tReason: {2} ".format(
+                args[1],
                 st.status_code,
-                args[1]))
-            if st.status_code == 404:
-                logger.error(
-                    "Error 404 means the API call was not formatted correctly. Check the URL.")
-            elif st.status_code == 401:
+                st.text,
+            ))
+
+            if st.status_code == 401:
                 logger.error(
                     "Error 401 is an authentication error. This is likely an issue with your token. "
                     "Can you do 'rm ~/.dbtoken' and try again? ")
-            # add more helpful messages here...
-            # TODO reformat the LookUp function to include such messages
-            # raise an error if the call failed
-            raise RuntimeError("API call failed.")
         return st
 
     return func_wrapper
@@ -184,8 +104,23 @@ class Token:
         data = json.dumps({"username": username,
                            "password": pw})
         logger.debug('Creating a new token: doing API call now')
-        response = requests.post(path, data=data, headers=BASE_HEADERS)
-        response_json = json.loads(response.text)
+        # try making a new token 3 times
+        success = False
+        for _try in range(3):
+            try:
+                response = requests.post(path, data=data, headers=BASE_HEADERS)
+                response_json = json.loads(response.text)
+                success = True
+                break
+            except json.decoder.JSONDecodeError:
+                logger.info(f"Login attempt #{_try+1} failed. "
+                            f"Sleeping for {10**_try} seconds and trying again.")
+                time.sleep(10**_try)
+
+        if not success:
+            raise NewTokenError("Error in creating a token.")
+
+
         logger.debug(f'The response contains these keys: {list(response_json.keys())}')
         token = response_json.get('access_token', 'CALL_FAILED')
         if token == 'CALL_FAILED':
@@ -260,11 +195,12 @@ class DB():
 
     @Responder
     def _put(self, url, data):
-        return requests.put(PREFIX + url, data, headers=self.headers)
+        return requests.put(PREFIX + url, data=data, headers=self.headers)
 
     @Responder
     def _post(self, url, data):
-        return requests.post(PREFIX + url, data, headers=self.headers)
+        # DOES THIS WORK?
+        return requests.post(PREFIX + url, data=data, headers=self.headers)
 
     @Responder
     def _delete(self, url, data):
@@ -470,6 +406,68 @@ class DB():
         url = '/mc/documents/'
         return self._delete(url, data=doc)
 
+    def download_file(self, filename, save_dir='./', force=False):
+        """Downloads file from GridFS"""
+        url = f'/files/{filename}'
+        os.makedirs(save_dir, exist_ok=True)
+        write_to = os.path.join(save_dir, filename)
+        if os.path.exists(write_to) and not force:
+            logger.debug(f"{filename} already exists at {write_to} and the 'force' flag is not set.")
+        else:
+            logger.debug(f"Downloading {filename} from gridfs...")
+            response = self._get(url)
+            with open(write_to, 'wb') as f:
+                f.write(response.content)
+            logger.debug(f'DONE. {filename} downloaded to {write_to}')
+        return write_to
+
+    def load_file(self, filename, save_dir=None, force=False):
+        if save_dir is None:
+            save_dir = os.path.join(os.environ.get("HOME"), '.gridfs_cache')
+        path = self.download_file(filename, save_dir=save_dir, force=force)
+        return io.read_file(path)
+
+    def upload_file(self, filepath, filename=None):
+        with open(filepath, 'rb') as f:
+            fb = f.read()
+        # if no specific filename passed, just get it from the path
+        if not filename:
+            filename = os.path.basename(filepath)
+        url = f'/files/{filename}'
+        return self._post(url, data=fb)
+
+    def get_files(self, query: dict, projection=None):
+        """Do a general query on the fs.files collection"""
+        url = '/files/query'
+        # the projection needs to be a dict for the flask app
+        if projection is None:
+            projection = {}
+        data = json.dumps(dict(query=query, projection=projection))
+        result = self._post(url, data=data)
+        response = result.json()
+        return response.get('results', [])
+
+    def count_files(self, query: dict)->int:
+        """Perform colection.count_documents on the fs.files-collection using the query"""
+        """<URL MAGIC>"""
+        docs = self.get_files(query)
+        return len(docs)
+
+    def delete_file(self, filename):
+        resp = input(f"HUGE GIGANTIC CRITICAL WARNING: this will delete all files of the name {filename} in GridFS. "
+                     "Confirm by typing again the name of the file you want to delete: \n")
+        if resp != filename:
+            print("Probably the safe choice. Exiting.")
+            return
+        url = f'/files/{filename}'
+        return self._delete(url, data="")
+
+    def get_file_md5(self, filename):
+        url = f"/files/{filename}/md5"
+        response = self._get(url).json()
+        return response['results']
+
+
 
 class PyMongoCannotConnect(Exception):
     """Raise error when we cannot connect to the pymongo client"""
@@ -530,29 +528,23 @@ def pymongo_collection(collection='runs', **kwargs):
     return coll
 
 
-def _collection(experiment, collection, **kwargs):
+def _collection(experiment, collection, url=None, user=None, password=None, database=None):
     if experiment not in ['xe1t', 'xent']:
         raise ValueError(f"experiment must be 'xe1t' or 'xent'. You passed f{experiment}")
-    uri = 'mongodb://{user}:{pw}@{url}'
-    url = kwargs.get('url')
-    user = kwargs.get('user')
-    pw = kwargs.get('password')
-    database = kwargs.get('database')
 
     if not url:
         url = uconfig.get('RunDB', f'{experiment}_url')
     if not user:
         user = uconfig.get('RunDB', f'{experiment}_user')
-    if not pw:
-        pw = uconfig.get('RunDB', f'{experiment}_password')
+    if not password:
+        password = uconfig.get('RunDB', f'{experiment}_password')
     if not database:
         database = uconfig.get('RunDB', f'{experiment}_database')
 
-    uri = uri.format(user=user, pw=pw, url=url)
+    uri = f"mongodb://{user}:{password}@{url}"
     c = pymongo.MongoClient(uri, readPreference='secondaryPreferred')
     DB = c[database]
     coll = DB[collection]
-
     return coll
 
 
