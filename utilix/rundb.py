@@ -12,8 +12,9 @@ from . import uconfig, io, logger
 
 # Config the logger:
 
-PREFIX = uconfig.get('RunDB', 'rundb_api_url')
-BASE_HEADERS = {'Content-Type': "application/json", 'Cache-Control': "no-cache"}
+if uconfig is not None:
+    PREFIX = uconfig.get('RunDB', 'rundb_api_url', fallback=None)
+    BASE_HEADERS = {'Content-Type': "application/json", 'Cache-Control': "no-cache"}
 
 
 class NewTokenError(Exception):
