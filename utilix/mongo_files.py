@@ -28,7 +28,7 @@ import typing as ty
 import numpy as np
 import pandas as pd
 
-from . import uconfig
+from . import uconfig, logger
 from .rundb import xent_collection, DB
 
 
@@ -575,7 +575,7 @@ class APIUploader(GridFsInterfaceAPI, GridFsUploadBase):
         if not os.path.exists(abs_path):
             raise CouldNotLoadError(f'{abs_path} does not exist')
 
-        print(f'uploading file {config} from {abs_path}')
+        logger.info(f'uploading file {config} from {abs_path}')
         self.db.upload_file(abs_path, config)
 
 

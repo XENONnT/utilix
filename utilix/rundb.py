@@ -8,17 +8,9 @@ import pymongo
 from warnings import warn
 import time
 
-from . import uconfig
-from . import io
+from . import uconfig, io, logger
 
 # Config the logger:
-logger = logging.getLogger("utilix")
-ch = logging.StreamHandler()
-ch.setLevel(uconfig.logging_level)
-logger.setLevel(uconfig.logging_level)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
 
 PREFIX = uconfig.get('RunDB', 'rundb_api_url')
 BASE_HEADERS = {'Content-Type': "application/json", 'Cache-Control': "no-cache"}
@@ -90,7 +82,8 @@ class Token:
 
         # refresh if needed
         if not self.is_valid:
-            self.refresh()
+            self.new_token()
+            #self.refresh()
         else:
             logger.debug("Token is valid. Not refreshing")
 
@@ -149,10 +142,11 @@ class Token:
         headers['Authorization'] = f"Bearer {self.token_string}"
         logger.debug(f"Refreshing your token with API call {url}")
         response = requests.get(url, headers=headers)
-        logger.debug(f"The response was {response.text}")
+        response_json = json.loads(response.text)
+        logger.debug(f'The response contains these keys: {list(response_json.keys())}')
         # if renew fails, try logging back in
         if response.status_code != 200:
-            if json.loads(response.text)['error'] != 'EarlyRefreshError':
+            if response_json['error'] != 'EarlyRefreshError':
                 logger.warning("Refreshing token failed for some reason, so making a  new one")
                 self.new_token()
                 self.creation_time = datetime.datetime.now().timestamp()
@@ -501,7 +495,7 @@ def test_collection(collection, url, raise_errors=False):
 def pymongo_collection(collection='runs', **kwargs):
     # default collection is the XENONnT runsDB
     # for 1T, pass collection='runs_new'
-    print("WARNING: pymongo_collection is deprecated. Please use nt_collection or 1t_collection instead")
+    print("WARNING: pymongo_collection is deprecated. Please use xent_collection or xe1t_collection instead")
     uri = 'mongodb://{user}:{pw}@{url}'
     url = kwargs.get('url')
     user = kwargs.get('user')
