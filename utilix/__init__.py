@@ -18,6 +18,7 @@ try:
 
 except FileNotFoundError as e:
     uconfig = None
+    logger = None
     warn(f'Utilix cannot find config file:\n {e}\nWithout it, you cannot '
          f'access the database. See https://github.com/XENONnT/utilix.')
 
