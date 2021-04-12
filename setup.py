@@ -11,7 +11,7 @@ with open('README.md') as file:
 
 setup(
     name="utilix",
-    version="0.5.0",
+    version="0.5.1",
     url='https://github.com/XENONnT/utilix',
     description="User-friendly interface to various utilities for XENON users",
     #long_description=readme,
