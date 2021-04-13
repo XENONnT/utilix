@@ -17,7 +17,7 @@ setup(
     version="0.5.2",
     url='https://github.com/XENONnT/utilix',
     description="User-friendly interface to various utilities for XENON users",
-    #long_description=readme,
+    long_description_content_type='text/markdown',
     packages=find_packages(),
     install_requires=requires,
     python_requires=">=3.6",
