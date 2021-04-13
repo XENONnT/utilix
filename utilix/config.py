@@ -1,9 +1,17 @@
 import os
 import configparser
-from . import _setup_logger
+import logging
 
 
-logger = _setup_logger("WARNING")
+def setup_logger(logging_level='WARNING'):
+    logger = logging.getLogger("utilix")
+    ch = logging.StreamHandler()
+    ch.setLevel(logging_level)
+    logger.setLevel(logging_level)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return logger
 
 
 class EnvInterpolation(configparser.BasicInterpolation):
@@ -13,11 +21,11 @@ class EnvInterpolation(configparser.BasicInterpolation):
         return os.path.expandvars(value)
 
 
-class Config():
+class Config:
     # singleton
     instance = None
 
-    def __init__(self, path=None):
+    def __init__(self):
         if not Config.instance:
             Config.instance = Config.__Config()
 
@@ -29,10 +37,12 @@ class Config():
         def __init__(self):
             config_file_path = None
 
+            logger = setup_logger()
+
             if 'XENON_CONFIG' not in os.environ:
                 logger.info('$XENON_CONFIG is not defined in the environment')
             if 'HOME' not in os.environ:
-                logger.warning('$HOME is not defined in the environment')
+                logger.info('$HOME is not defined in the environment')
                 if 'USERPROFILE' in os.environ:
                     # Are you on windows?
                     home_config = os.path.join(os.environ['USERPROFILE'], '.xenon_config')
@@ -42,7 +52,7 @@ class Config():
                 home_config = os.path.join(os.environ['HOME'], '.xenon_config')
             xenon_config = os.environ.get('XENON_CONFIG')
 
-            # if not, see if there is a XENON_CONFIG environment variable
+            # see if there is a XENON_CONFIG environment variable
             if xenon_config:
                 config_file_path = os.environ.get('XENON_CONFIG')
 
@@ -72,6 +82,8 @@ class Config():
                 else:
                     raise
 
+            self.is_configured = config_file_path is not None
+
         def get_list(self, category, key):
             list_string = self.get(category, key)
             return [s.strip() for s in list_string.split(',')]
@@ -86,3 +98,4 @@ class Config():
                                    f"Available levels are: \n{possible_levels}.\n "
                                    f"Please modify {self.config_path}")
             return level
+

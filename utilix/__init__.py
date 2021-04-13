@@ -1,31 +1,18 @@
 __version__ = '0.5.1'
 
-from warnings import warn
-import logging
+from . import config
 
-def _setup_logger(logging_level):
-    logger = logging.getLogger("utilix")
-    ch = logging.StreamHandler()
-    ch.setLevel(logging_level)
-    logger.setLevel(logging_level)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    return logger
+# try loading config, if it doesn't work then set uconfig to None
+# this is needed so that strax(en) CI  tests will work even without a config file
+uconfig = config.Config()
 
-from utilix.config import Config
-uconfig = Config()
-logger = _setup_logger(uconfig.logging_level)
+if uconfig.is_configured:
+    logger = config.setup_logger(uconfig.logging_level)
 
-if uconfig.config_path is not None:
-    if uconfig.getboolean('utilix', 'initialize_db_on_import', fallback=True):
-        from utilix.rundb import DB
-        db = DB()
+else:
+    uconfig = None
+    logger = config.setup_logger()
 
-    else:
-        print("Warning: DB class NOT initialized on import. You cannot do `from utilix import db`")
-        print("If you want to initialize automatically on import, add the following to your utilix config:\n\n"
-          "[utilix]\n"
-          "initialize_db_on_import=true\n")
+from .rundb import DB, xent_collection, xe1t_collection
+from .mongo_files import MongoUploader, MongoDownloader, APIUploader, APIDownloader
 
-from . import mongo_files

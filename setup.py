@@ -9,6 +9,9 @@ with open('requirements.txt') as f:
 with open('README.md') as file:
     readme = file.read()
 
+with open('HISTORY.md') as file:
+    history = file.read()
+
 setup(
     name="utilix",
     version="0.5.1",
@@ -18,4 +21,5 @@ setup(
     packages=find_packages(),
     install_requires=requires,
     python_requires=">=3.6",
+    long_description=readme + '\n\n' + history,
 )
