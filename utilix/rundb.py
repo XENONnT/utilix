@@ -8,13 +8,18 @@ import pymongo
 from warnings import warn
 import time
 
-from . import uconfig, io, logger
+from . import uconfig, io
+from .config import setup_logger
+
 
 # Config the logger:
-
 if uconfig is not None:
     PREFIX = uconfig.get('RunDB', 'rundb_api_url', fallback=None)
     BASE_HEADERS = {'Content-Type': "application/json", 'Cache-Control': "no-cache"}
+    logger = setup_logger(uconfig.logging_level)
+
+else:
+    logger = setup_logger()
 
 
 class NewTokenError(Exception):
@@ -23,6 +28,7 @@ class NewTokenError(Exception):
 
 class APIError(Exception):
     pass
+
 
 def Responder(func):
     def func_wrapper(*args, **kwargs):
