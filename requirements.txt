@@ -2,5 +2,4 @@ pymongo
 requests
 tqdm
 pandas
-gridfs
 commentjson
