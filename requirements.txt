@@ -1,3 +1,7 @@
 pymongo
 requests
+tqdm
+pandas
+json
+gridfs
 commentjson
