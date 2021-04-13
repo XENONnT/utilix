@@ -4,9 +4,15 @@ import gzip
 import json
 import pandas as pd
 import os
+import commentjson
 
 
 def read_file(path):
+    """
+    Open a file from disk. Auto-infers the file format
+    :param path: str, file to open
+    :return: opened file
+    """
     # copied from straxen.common.open_resource
     # https://github.com/XENONnT/straxen/blob/a2e0e3abdbf278000cda70f7662a7d841c7223ef/straxen/common.py#L85
     name, fmt = os.path.splitext(path)
@@ -30,9 +36,9 @@ def read_file(path):
         elif subfmt == '.json':
             with gzip.open(path, 'rb') as f:
                 result = json.load(f)
-    elif fmt == '.json':
+    elif fmt == 'json':
         with open(path, mode='r') as f:
-            result = json.load(f)
+            result = commentjson.load(f)
     elif fmt == '.binary':
         with open(path, mode='rb') as f:
             result = f.read()
