@@ -14,10 +14,10 @@ def _setup_logger(logging_level):
     return logger
 
 from utilix.config import Config
-uconfig = None
+uconfig = Config()
 logger = _setup_logger(uconfig.logging_level)
 
-if hasattr(uconfig, 'config_path') and uconfig.config_path is not None:
+if uconfig.config_path is not None:
     if uconfig.getboolean('utilix', 'initialize_db_on_import', fallback=True):
         from utilix.rundb import DB
         db = DB()
@@ -27,5 +27,7 @@ if hasattr(uconfig, 'config_path') and uconfig.config_path is not None:
         print("If you want to initialize automatically on import, add the following to your utilix config:\n\n"
           "[utilix]\n"
           "initialize_db_on_import=true\n")
+else:
+    uconfig = None
 
 from . import mongo_files
