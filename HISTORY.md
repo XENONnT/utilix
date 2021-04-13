@@ -1,3 +1,7 @@
+v0.5.2 - 2021/04/13
+=====
+ * Actually fixes the bug introduced in v0.5.0.
+
 v0.5.1 - 2021/04/12
 ======
  * Fixes the bug introduced in v0.5.0 for cases when no config file exists. (#41, #42)
