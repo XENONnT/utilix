@@ -17,7 +17,7 @@ def read_file(path):
     # https://github.com/XENONnT/straxen/blob/a2e0e3abdbf278000cda70f7662a7d841c7223ef/straxen/common.py#L85
     name, fmt = os.path.splitext(path)
 
-    if fmt in ['.npy', '.npy_pickle']:
+    if fmt in ['.npy', '.npy_pickle', '.npz']:
         result = np.load(path, allow_pickle=fmt == 'npy_pickle')
         if isinstance(result, np.lib.npyio.NpzFile):
             # Slurp the arrays in the file, so the result can be copied,
