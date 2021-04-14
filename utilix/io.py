@@ -36,7 +36,7 @@ def read_file(path):
         elif subfmt == '.json':
             with gzip.open(path, 'rb') as f:
                 result = json.load(f)
-    elif fmt == 'json':
+    elif fmt == '.json':
         with open(path, mode='r') as f:
             result = commentjson.load(f)
     elif fmt == '.binary':
