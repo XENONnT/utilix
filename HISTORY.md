@@ -1,3 +1,7 @@
+v0.5.3 - 2021/04/14
+=====
+ * Small bugfixes in utilix.io
+
 v0.5.2 - 2021/04/13
 =====
  * Actually fixes the bug introduced in v0.5.0.
