@@ -44,6 +44,8 @@ def Responder(func):
                 raise APIError(
                     "Error 401 is an authentication error. This is likely an issue with your token. "
                     "Can you do 'rm ~/.dbtoken' and try again? ")
+            else:
+                raise APIError("API called failed")
         return st
 
     return func_wrapper
@@ -202,7 +204,6 @@ class DB():
 
     @Responder
     def _post(self, url, data):
-        # DOES THIS WORK?
         return requests.post(PREFIX + url, data=data, headers=self.headers)
 
     @Responder
@@ -260,7 +261,7 @@ class DB():
         # TODO what should be default
         return json.loads(self._get(url).text).get('results', None)
 
-    def get_data(self, identifier):
+    def get_data(self, identifier, **filters):
         '''
         Retrieves the data portion of a document from the
         database. The identifier could be a run number of
@@ -279,12 +280,25 @@ class DB():
         if 'data' not in data:
             raise RuntimeError('The requested document does not have a data key/value')
 
-        return data['data']
+        data = data['data']
+
+        ret = []
+        for d in data:
+            passes_filter = True
+            for key, val in filters.items():
+                if d.get(key) != val:
+                    passes_filter = False
+            if passes_filter:
+                ret.append(d)
+
+        return ret
 
     def update_data(self, identifier, datum):
         '''
         Updates a data entry. Identifier can be run number of name.
         '''
+
+        datum = cleanup_datadict(datum)
 
         # map from all kinds of types (int, np int, ...)
         identifier = str(identifier)
@@ -557,3 +571,16 @@ def xent_collection(collection='runs', **kwargs):
 
 def xe1t_collection(collection='runs_new', **kwargs):
     return _collection('xe1t', collection, **kwargs)
+
+
+def cleanup_datadict(ddict):
+    good_keys = ['creation_time', 'host', 'location',
+                 'type', 'status', 'meta', 'did', 'protocol']
+    new_dict = ddict.copy()
+
+    for key in ddict:
+        if key not in good_keys:
+            new_dict.pop(key)
+
+    return new_dict
+
