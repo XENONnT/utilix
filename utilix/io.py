@@ -42,7 +42,7 @@ def read_file(path):
     elif fmt == '.binary':
         with open(path, mode='rb') as f:
             result = f.read()
-    elif fmt == '.text':
+    elif fmt in ['.text', '.txt']:
         with open(path, mode='r') as f:
             result = f.read()
     elif fmt == '.csv':
@@ -51,3 +51,16 @@ def read_file(path):
         raise ValueError(f"Unsupported format {fmt}!")
 
     return result
+
+
+def load_runlist(runlist_path):
+    name, fmt = os.path.splitext(runlist_path)
+    if fmt in ['.npy', '.pkl']:
+        return read_file(runlist_path)
+    elif fmt in ['.txt', 'text']:
+        ret = []
+        with open(runlist_path) as f:
+            for line in f.readlines():
+                ret.append(int(line.rstrip()))
+        return ret
+
