@@ -35,7 +35,6 @@ def singularity_wrap(jobstring, image, bind=('/dali', '/project2', TMPDIR)):
 
     bind_string = " ".join([f"--bind {b}" for b in bind])
     image = os.path.join(SINGULARITY_DIR, image)
-    jobstring = 'unset X509_CERT_DIR\n' + jobstring
     new_job_string = f"""cat > {exec_file} << EOF
 #!/bin/bash
 {jobstring}
@@ -58,7 +57,7 @@ def submit_job(jobstring, log='job.log', partition='xenon1t', qos='xenon1t',
         # need to wrap job into another executable
         _, exec_file = tempfile.mkstemp(suffix='.sh')
         jobstring = singularity_wrap(jobstring, container)
-        jobstring = 'module load singularity\n' + jobstring
+        jobstring = 'unset X509_CERT_DIR\n' + 'module load singularity\n' + jobstring
 
     sbatch_script = sbatch_template.format(jobname=jobname, log=log, qos=qos, partition=partition,
                                            account=account, job=jobstring, mem_per_cpu=mem_per_cpu,
