@@ -545,6 +545,8 @@ def pymongo_collection(collection='runs', **kwargs):
     return coll
 
 
+MONGO_CLIENTS = dict()
+
 def _collection(experiment, collection, url=None, user=None, password=None, database=None):
     if experiment not in ['xe1t', 'xent']:
         raise ValueError(f"experiment must be 'xe1t' or 'xent'. You passed f{experiment}")
@@ -558,11 +560,21 @@ def _collection(experiment, collection, url=None, user=None, password=None, data
     if not database:
         database = uconfig.get('RunDB', f'{experiment}_database')
 
-    uri = f"mongodb://{user}:{password}@{url}"
-    c = pymongo.MongoClient(uri, readPreference='secondaryPreferred')
-    DB = c[database]
-    coll = DB[collection]
-    return coll
+    # build other client kwargs
+    max_pool_size = uconfig.get('RunDB', 'max_pool_size', fallback=100)
+    socket_timeout = uconfig.get('RunDB', 'socket_timeout', fallback=60000)
+    connect_timeout = uconfig.get('RunDB', 'connect_timeout', fallback=60000)
+
+    global MONGO_CLIENTS
+    if experiment not in MONGO_CLIENTS:
+        uri = f"mongodb://{user}:{password}@{url}"
+        MONGO_CLIENTS[experiment] = pymongo.MongoClient(uri, readPreference='secondaryPreferred',
+                                                        maxPoolSize=max_pool_size,
+                                                        socketTimeoutMS=socket_timeout,
+                                                        connectTimeoutMS=connect_timeout
+                                                        )
+    db = MONGO_CLIENTS[experiment][database]
+    return db[collection]
 
 
 def xent_collection(collection='runs', **kwargs):
