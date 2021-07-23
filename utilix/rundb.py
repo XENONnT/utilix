@@ -565,15 +565,14 @@ def _collection(experiment, collection, url=None, user=None, password=None, data
     socket_timeout = uconfig.get('RunDB', 'socket_timeout', fallback=60000)
     connect_timeout = uconfig.get('RunDB', 'connect_timeout', fallback=60000)
 
-    global MONGO_CLIENTS
-    if experiment not in MONGO_CLIENTS:
-        uri = f"mongodb://{user}:{password}@{url}"
-        MONGO_CLIENTS[experiment] = pymongo.MongoClient(uri, readPreference='secondaryPreferred',
+    uri = f"mongodb://{user}:{password}@{url}"
+    if uri not in MONGO_CLIENTS:    
+        MONGO_CLIENTS[uri] = pymongo.MongoClient(uri, readPreference='secondaryPreferred',
                                                         maxPoolSize=max_pool_size,
                                                         socketTimeoutMS=socket_timeout,
                                                         connectTimeoutMS=connect_timeout
                                                         )
-    db = MONGO_CLIENTS[experiment][database]
+    db = MONGO_CLIENTS[uri][database]
     return db[collection]
 
 
