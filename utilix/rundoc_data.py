@@ -42,7 +42,7 @@ class RunDocUpload:
     def _check_base_doc(doc):
         """Check that the base at least contains the required fields"""
         missing = []
-        # I'm just hardcoding it here
+        # I'm just hardcoding it here as this should *always* be true
         for field in 'host protocol'.split():
             if field not in doc:
                 missing += [field]
@@ -79,6 +79,12 @@ def upload_doc_from_file(base_doc: dict,
     run_id = metadata['run_id']
     lineage_hash = metadata['lineage_hash']
     data_type = metadata['data_type']
+    files = os.listdir(path)
+
+    for f in files:
+        if 'temp' in f:
+            raise ValueError(f'One or more temp files in {path}, we aren\'t '
+                             f'finished writing!')
 
     if location is None:
         location = path
@@ -87,7 +93,7 @@ def upload_doc_from_file(base_doc: dict,
     ddoc = base_doc.copy()
 
     # basic entries
-    ddoc['file_count'] = len(os.listdir(path))
+    ddoc['file_count'] = len(files)
     ddoc['did'] = f'xnt_{run_id}:{data_type}:{lineage_hash}'
     ddoc['type'] = data_type
     ddoc['location'] = location
@@ -96,7 +102,7 @@ def upload_doc_from_file(base_doc: dict,
     ddoc['meta'] = {}
     ddoc['meta']['strax_version'] = metadata['strax_version']
     ddoc['meta']['compressor'] = metadata['compressor']
-    chunk_mb = [chunk['nbytes'] / (1e6) for chunk in metadata['chunks']]
+    chunk_mb = [chunk['nbytes'] / 1e6 for chunk in metadata['chunks']]
     ddoc['meta']['size_mb'] = int(sum(chunk_mb))
     ddoc['meta']['lineage_hash'] = lineage_hash
 
