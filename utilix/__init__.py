@@ -13,6 +13,13 @@ else:
     uconfig = None
     logger = config.setup_logger()
 
-from .rundb import DB, xent_collection, xe1t_collection
+from .rundb import xent_collection, xe1t_collection, DBapi, DBmongo
 from .mongo_files import MongoUploader, MongoDownloader, APIUploader, APIDownloader
 from .rundoc_data import RunDocUpload, upload_doc_from_file
+
+# initialize runDB instance if we can
+if uconfig:
+    if uconfig.get('RunDB', 'api_or_mongo', fallback='api') == 'api':
+        db = DBapi()
+    else:
+        db = DBmongo()
