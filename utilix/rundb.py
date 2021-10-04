@@ -5,8 +5,8 @@ import json
 import datetime
 import logging
 import pymongo
-from warnings import warn
 import time
+from jsonschema import validate
 
 from . import uconfig, io
 from .config import setup_logger
@@ -22,11 +22,36 @@ else:
     logger = setup_logger()
 
 
+MONGO_CLIENTS = dict()
+
+DATA_SCHEMA = {'properties': {'host': {'type': "string"},
+                              'type': {'type': "string"},
+                              'location': {'type': "string"},
+                              'status': {'type': "string"},
+                              'did': {'type': "string"},
+                              'lineage_hash': {'type': "string"},
+                              'disk_mb': {'type': "number"},
+                              'protocol': {'type': "string"},
+                              'file_count': {'type': 'number',
+                                             'minimum': 1
+                                            }
+                              },
+               'type': "object",
+               'required': ['host', 'type', 'location', 'status', 'did', 'lineage_hash',
+                            'disk_mb', 'protocol']
+              }
+
+
 class NewTokenError(Exception):
     pass
 
 
 class APIError(Exception):
+    pass
+
+
+class PyMongoCannotConnect(Exception):
+    """Raise error when we cannot connect to the pymongo client"""
     pass
 
 
@@ -173,7 +198,87 @@ class Token:
             json.dump(self.json, f)
 
 
-class DB():
+class DB_Base:
+    """Base class for all DB objects"""
+
+    def _is_run_number(self, identifier):
+        '''
+        Takes a string and classifies it as a run number (as opposed to a
+        run name)
+        '''
+        if re.search('^[0-9]+$', identifier):
+            return True
+        return False
+
+    def get_doc(self, identifier):
+        raise NotImplementedError
+
+    def get_data(self, identifier, **filters):
+        raise NotImplementedError
+
+    def update_data(self, identifier, datum):
+        raise NotImplementedError
+
+    def delete_data(self, identifier, datum):
+        raise NotImplementedError
+
+    def get_hash(self, context, datatype, straxen_version):
+        raise NotImplementedError
+
+    def update_context_collection(self, data):
+        raise NotImplementedError
+
+    def delete_context_collection(self, context, straxen_version):
+        raise NotImplementedError
+
+    def get_context(self, context, straxen_version):
+        raise NotImplementedError
+
+    def get_rses(self, run_number, dtype, hash=None):
+        raise NotImplementedError
+
+    def get_all_contexts(self):
+        raise NotImplementedError
+
+    def get_context_info(self, dtype, strax_hash):
+        """Returns context name and strax(en) versions for a given dtype and hash"""
+        raise NotImplementedError
+
+    def get_mc_documents(self):
+        raise NotImplementedError
+
+    def add_mc_document(self, document):
+        raise NotImplementedError
+
+    def delete_mc_document(self, document):
+        raise NotImplementedError
+
+    def download_file(self, filename, save_dir='./', force=False):
+        raise NotImplementedError
+
+    def load_file(self, filename, save_dir=None, force=False):
+        if save_dir is None:
+            save_dir = os.path.join(os.environ.get("HOME"), '.gridfs_cache')
+        path = self.download_file(filename, save_dir=save_dir, force=force)
+        return io.read_file(path)
+
+    def upload_file(self, filepath, filename=None):
+        raise NotImplementedError
+
+    def get_files(self, query: dict, projection=None):
+        raise NotImplementedError
+
+    def count_files(self, query: dict):
+        raise NotImplementedError
+
+    def delete_file(self, filename):
+        raise NotImplementedError
+
+    def get_file_md5(self, filename):
+        raise NotImplementedError
+
+
+class DBapi(DB_Base):
     """Wrapper around the RunDB API"""
 
     def __init__(self, token_path=None):
@@ -210,15 +315,6 @@ class DB():
     def _delete(self, url, data):
         return requests.delete(PREFIX + url, data=data, headers=self.headers)
 
-    def _is_run_number(self, identifier):
-        '''
-        Takes a string and classifies it as a run number (as opposed to a
-        run name)
-        '''
-        if re.search('^[0-9]+$', identifier):
-            return True
-        return False
-
     def _get_from_results(self, name_or_number, key):
         url = "/runs/number/{name_or_number}/filter/detector".format(name_or_number=name_or_number)
         response = json.loads(self._get(url).text)
@@ -234,16 +330,6 @@ class DB():
 
     def get_number(self, number):
         return self._get_from_results(number, 'number')
-
-    def get_did(self, identifier, type='raw_records'):
-        doc = self.get_doc(identifier)
-        for d in doc['data']:
-            if not ('host' in d and 'type' in d and 'did' in d):
-                # This ddoc is not in the format of rucio
-                continue
-            if d['host'] == 'rucio-catalogue' and d['type'] == type:
-                return d['did']
-        raise ValueError(f'No {identifier} for {type}')
 
     def get_doc(self, identifier):
         '''
@@ -298,7 +384,8 @@ class DB():
         Updates a data entry. Identifier can be run number of name.
         '''
 
-        datum = cleanup_datadict(datum)
+        # will throw error if validation fails
+        validate(datum, DATA_SCHEMA)
 
         # map from all kinds of types (int, np int, ...)
         identifier = str(identifier)
@@ -376,18 +463,12 @@ class DB():
         response = json.loads(self._get(url).text)
         return response.get('results', {})
 
-    def get_rses(self, run_number, dtype, hash):
-        data = self.get_data(run_number)
+    def get_rses(self, run_number, dtype, hash=None):
+        data = self.get_data(run_number, type=dtype, host='rucio-catalogue', status='transferred')
         rses = []
         for d in data:
-            assert 'host' in d and 'type' in d, (
-                f"invalid data-doc retrieved for {run_number} {dtype} {hash}")
-            # Did is only in rucio-cataloge, hence don't ask for it to
-            # be in all docs in data
-            if (d['host'] == "rucio-catalogue" and d['type'] == dtype and
-                    hash in d['did'] and d['status'] == 'transferred'):
+            if hash is None or hash in d.get('did'):
                 rses.append(d['location'])
-
         return rses
 
     # TODO
@@ -485,67 +566,130 @@ class DB():
         return response['results']
 
 
+class DBmongo(DB_Base):
+    """Wrapper around pymongo to do standard DB calls"""
+    def __init__(self):
+        self.run_collection = xent_collection()
+        self.context_collection = xent_collection('contexts')
+        # TODO mc collection
 
-class PyMongoCannotConnect(Exception):
-    """Raise error when we cannot connect to the pymongo client"""
-    pass
+    def update_data(self, identifier, datum):
+        # will throw error if validation fails
+        validate(datum, DATA_SCHEMA)
 
+        dq = dict()
+        for field in ['host', 'location', 'type', 'did']:
+            if datum.get(field):
+                dq[field] = datum[field]
+        query = {'number': identifier, 'data': {'$elemMatch': dq}}
+        # try modifying the data field for this query
+        new_doc = self.run_collection.find_one_and_update(query,
+                                                          {"$set": {"data.$": datum}},
+                                                          {"returnNewDocument": True})
+        if not new_doc:
+            # do an insert instead
+            query.pop('data')
+            self.run_collection.find_one_and_update(query, {"$push": {"data": datum}})
 
-def test_collection(collection, url, raise_errors=False):
-    """
-    Warn user if client can be troublesome if read preference is not specified
-    :param collection: pymongo client
-    :param url: the mongo url we are testing (for the error message)
-    :param raise_errors: if False (default) warn, otherwise raise an error
-    """
-    try:
-        # test the collection by doing a light query
-        collection.find_one({}, {'_id': 1})
-    except (pymongo.errors.ServerSelectionTimeoutError, pymongo.errors.OperationFailure) as e:
-        # This happens when trying to connect to one or more mirrors
-        # where we cannot decide on who is primary
-        message = (
-            f'Cannot get server info from "{url}". Check your config at {uconfig.config_path}')
-        if not raise_errors:
-            warn(message)
+    def delete_data(self, identifier, datum):
+        validate(datum, DATA_SCHEMA)
+        query = {'number': identifier,
+                 }
+        self.run_collection.find_one_and_update(query, {"$pull": {"data": datum}})
+
+    def get_data(self, identifier, **filters):
+        query = {'number': identifier}
+        cursor = self.run_collection.find_one(query, {'data': 1})
+
+        ret = []
+        for d in cursor['data']:
+            passes_filter = True
+            for key, val in filters.items():
+                if d.get(key) != val:
+                    passes_filter = False
+            if passes_filter:
+                ret.append(d)
+
+        return ret
+
+    def get_doc(self, identifier):
+        return self.run_collection.find_one({'number': identifier})
+
+    def get_hash(self, context, datatype, straxen_version):
+        query = {'name': context,
+                 'straxen_version': straxen_version
+                 }
+        cursor = self.context_collection.find_one(query, sort=[('date_added', -1)])
+        if cursor:
+            try:
+                return cursor['hashes'][datatype]
+            except KeyError:
+                raise KeyError(f"No hash found for datatype {datatype}")
         else:
-            message += (
-                'This usually happens when trying to connect to multiple '
-                'mirrors when they cannot decide which is primary. Also see:\n'
-                'https://github.com/XENONnT/straxen/pull/163#issuecomment-732031099')
-            raise PyMongoCannotConnect(message) from e
+            raise ValueError("No context found satisfying your query")
+
+    def update_context_collection(self, data):
+        context = data['name']
+        straxen_version = data['straxen_version']
+        self.context_collection.update_one({'name': context, 'straxen_version': straxen_version},
+                                           {'$set': data}
+                                           )
 
 
-def pymongo_collection(collection='runs', **kwargs):
-    # default collection is the XENONnT runsDB
-    # for 1T, pass collection='runs_new'
-    print("WARNING: pymongo_collection is deprecated. Please use xent_collection or xe1t_collection instead")
-    uri = 'mongodb://{user}:{pw}@{url}'
-    url = kwargs.get('url')
-    user = kwargs.get('user')
-    pw = kwargs.get('password')
-    database = kwargs.get('database')
+    def delete_context_collection(self, context, straxen_version):
+        self.context_collection.delete_one({'name': context, 'straxen_version': straxen_version})
 
-    if not url:
-        url = uconfig.get('RunDB', 'pymongo_url')
-    if not user:
-        user = uconfig.get('RunDB', 'pymongo_user')
-    if not pw:
-        pw = uconfig.get('RunDB', 'pymongo_password')
-    if not database:
-        database = uconfig.get('RunDB', 'pymongo_database')
-    uri = uri.format(user=user, pw=pw, url=url)
-    c = pymongo.MongoClient(uri, readPreference='secondaryPreferred')
-    DB = c[database]
-    coll = DB[collection]
-    # Checkout the collection we are returning and raise errors if you want
-    # to be realy sure we can use this URL.
-    # test_collection(coll, url, raise_errors=False)
+    def get_context(self, context, straxen_version):
+        return self.context_collection.find_one({'name': context, 'straxen_version': straxen_version},
+                                                sort=[('date_added', -1)])
 
-    return coll
+    def get_rses(self, run_number, dtype, hash=None):
+        data = self.get_data(run_number, host='rucio-catalogue', status='transferred', type=dtype)
+        ret = []
+        for d in data:
+            if hash is None or hash in d['did']:
+                ret.append(d['location'])
+        return ret
 
+    def get_all_contexts(self):
+        return list(self.context_collection.find())
 
-MONGO_CLIENTS = dict()
+    def get_context_info(self, dtype, strax_hash):
+        """Returns context name and straxen versions for a given dtype and hash"""
+        query = {f'hashes.{dtype}': strax_hash}
+        cursor = self.context_collection.find(query)
+        ret = []
+        for doc in cursor:
+            ret.append((doc['name'], doc['straxen_version']))
+        return ret
+
+    def get_mc_documents(self):
+        raise NotImplementedError
+
+    def add_mc_document(self, document):
+        raise NotImplementedError
+
+    def delete_mc_document(self, document):
+        raise NotImplementedError
+
+    def download_file(self, filename, save_dir='./', force=False):
+        raise NotImplementedError
+
+    def upload_file(self, filepath, filename=None):
+        raise NotImplementedError
+
+    def get_files(self, query: dict, projection=None):
+        raise NotImplementedError
+
+    def count_files(self, query: dict):
+        raise NotImplementedError
+
+    def delete_file(self, filename):
+        raise NotImplementedError
+
+    def get_file_md5(self, filename):
+        raise NotImplementedError
+
 
 def _collection(experiment, collection, url=None, user=None, password=None, database=None):
     if experiment not in ['xe1t', 'xent']:
@@ -595,3 +739,14 @@ def cleanup_datadict(ddict):
 
     return new_dict
 
+
+def get_db(use):
+    if use == 'mongo':
+        return DBmongo()
+    elif use == 'api':
+        return DBapi()
+    else:
+        raise ValueError(f"get_db takes either 'mongo' or 'api'")
+
+# TODO deprecate this at some point
+DB = DBapi

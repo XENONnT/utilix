@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 from . import uconfig, logger
-from .rundb import xent_collection, DB
+from .rundb import xent_collection, DBapi
 
 
 class GridFsBase:
@@ -447,7 +447,7 @@ class GridFsInterfaceAPI(GridFsBase):
     def __init__(self, config_identifier='config_name'):
         super().__init__(config_identifier=config_identifier)
         # all the credentials logic is handled by the utilix config, so don't need lengthy setup
-        self.db = DB()
+        self.db = DBapi()
 
     def config_exists(self, config):
         """
