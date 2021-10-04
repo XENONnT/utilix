@@ -234,7 +234,7 @@ class DB_Base:
     def get_context(self, context, straxen_version):
         raise NotImplementedError
 
-    def get_rses(self, run_number, dtype, hash):
+    def get_rses(self, run_number, dtype, hash=None):
         raise NotImplementedError
 
     def get_all_contexts(self):
@@ -463,18 +463,12 @@ class DBapi(DB_Base):
         response = json.loads(self._get(url).text)
         return response.get('results', {})
 
-    def get_rses(self, run_number, dtype, hash):
-        data = self.get_data(run_number)
+    def get_rses(self, run_number, dtype, hash=None):
+        data = self.get_data(run_number, type=dtype, host='rucio-catalogue', status='transferred')
         rses = []
         for d in data:
-            assert 'host' in d and 'type' in d, (
-                f"invalid data-doc retrieved for {run_number} {dtype} {hash}")
-            # Did is only in rucio-cataloge, hence don't ask for it to
-            # be in all docs in data
-            if (d['host'] == "rucio-catalogue" and d['type'] == dtype and
-                    hash in d['did'] and d['status'] == 'transferred'):
+            if hash is None or hash in d.get('did'):
                 rses.append(d['location'])
-
         return rses
 
     # TODO
@@ -745,3 +739,14 @@ def cleanup_datadict(ddict):
 
     return new_dict
 
+
+def get_db(use):
+    if use == 'mongo':
+        return DBmongo()
+    elif use == 'api':
+        return DBapi()
+    else:
+        raise ValueError(f"get_db takes either 'mongo' or 'api'")
+
+# TODO deprecate this at some point
+DB = DBapi
