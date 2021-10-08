@@ -28,7 +28,7 @@ def make_executable(path):
     os.chmod(path, mode)
 
 
-def singularity_wrap(jobstring, image, bind=('/dali', '/project2', TMPDIR)):
+def singularity_wrap(jobstring, image, bind):
     """Wraps a jobscript into another executable file that can be passed to singularity exec"""
     _, exec_file = tempfile.mkstemp(suffix='.sh', dir=TMPDIR)
     make_executable(exec_file)
@@ -49,6 +49,7 @@ def submit_job(jobstring, log='job.log', partition='xenon1t', qos='xenon1t',
                account='pi-lgrandi', jobname='somejob',
                delete_file=True, dry_run=False, mem_per_cpu=1000,
                container='xenonnt-development.simg',
+               bind=('/dali', '/project2', os.path.dirname(TMPDIR)),
                cpus_per_task=1):
 
     os.makedirs(TMPDIR, exist_ok=True)
@@ -56,7 +57,7 @@ def submit_job(jobstring, log='job.log', partition='xenon1t', qos='xenon1t',
     if container:
         # need to wrap job into another executable
         _, exec_file = tempfile.mkstemp(suffix='.sh')
-        jobstring = singularity_wrap(jobstring, container)
+        jobstring = singularity_wrap(jobstring, container, bind)
         jobstring = 'unset X509_CERT_DIR\n' + 'module load singularity\n' + jobstring
 
     sbatch_script = sbatch_template.format(jobname=jobname, log=log, qos=qos, partition=partition,
