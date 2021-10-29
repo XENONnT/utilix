@@ -595,3 +595,39 @@ def cleanup_datadict(ddict):
 
     return new_dict
 
+
+def cmt_local_valid_range(collection_name, local_version):
+    query = {local_version: {'$ne': float('nan')}}
+    collection = xent_collection(collection_name, database='corrections')
+    start = collection.find_one(query, {'time': 1}, sort=[('time', 1)])['time']
+    end = collection.find_one(query, {'time': 1}, sort=[('time', -1)])['time']
+    # if end is the last document in this collection, set it instead to 'end of time'
+    if end == collection.find_one({}, {'time': 1}, sort=[('time', -1)])['time']:
+        end = datetime.datetime(2100, 1, 1)
+    return start, end
+
+
+def cmt_global_valid_range(global_version):
+    """
+    Return the time range valid for a particular CMT global_version
+    """
+    coll = xent_collection('global_xenonnt', database='corrections')
+
+    cursor = coll.find_one()
+    if global_version not in cursor:
+        raise RuntimeError(f'{global_version} not found in the global collection!')
+    local_info = coll.find_one()[global_version]
+
+    valid_range = None
+
+    for collname, local_version in local_info.items():
+        start, end = cmt_local_valid_range(collname, local_version)
+        if valid_range is None:
+            valid_range = [start, end]
+        else:
+            if start > valid_range[0]:
+                valid_range[0] = start
+            if end < valid_range[1]:
+                valid_range[1] = end
+    return valid_range
+
