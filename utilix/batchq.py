@@ -2,6 +2,7 @@ import subprocess
 import os
 import tempfile
 import shlex
+from utilix import logger
 
 sbatch_template = """#!/bin/bash
 
@@ -45,13 +46,51 @@ rm {exec_file}
     return new_job_string
 
 
-def submit_job(jobstring, log='job.log', partition='xenon1t', qos='xenon1t',
-               account='pi-lgrandi', jobname='somejob',
-               delete_file=True, dry_run=False, mem_per_cpu=1000,
+def submit_job(jobstring,
+               log='job.log',
+               partition='xenon1t',
+               qos='xenon1t',
+               account='pi-lgrandi',
+               jobname='somejob',
+               sbatch_file=None,
+               dry_run=False,
+               mem_per_cpu=1000,
                container='xenonnt-development.simg',
                bind=('/dali', '/project2', os.path.dirname(TMPDIR)),
-               cpus_per_task=1):
+               cpus_per_task=1,
+               **kwargs
+               ):
+    """
+    Submit a job to the dali batch queue
 
+    EXAMPLE
+        from utilix import batchq
+        import time
+
+        job_log = 'job.log'
+        batchq.submit_job('echo "say hi"', log=job_log)
+
+        time.sleep(10) # Allow the job to run
+        for line in open(job_log):
+            print(line)
+
+    :param jobstring: the command to execute
+    :param log: where to store the log file of the job
+    :param partition: partition to submit the job to
+    :param qos: qos to submit the job to
+    :param account: account to submit the job to
+    :param jobname: how to name this job
+    :param sbatch_file: where to write the job script to
+    :param dry_run: only print how the job looks like
+    :param mem_per_cpu: mb requested for job
+    :param container: name of the container to activate
+    :param bind: which paths to add to the container
+    :param cpus_per_task: cpus requested for job
+    :param kwargs: are ignored
+    :return: None
+    """
+    if 'delete_file' in kwargs:
+        logger.warning('"delete_file" option for "submit_job" has been removed, ignoring for now')
     os.makedirs(TMPDIR, exist_ok=True)
 
     if container:
@@ -69,17 +108,22 @@ def submit_job(jobstring, log='job.log', partition='xenon1t', qos='xenon1t',
         print(sbatch_script)
         return
 
-    _, file = tempfile.mkstemp(suffix='.sbatch')
-    with open(file, 'w') as f:
+    if sbatch_file is None:
+        remove_file = True
+        _, sbatch_file = tempfile.mkstemp(suffix='.sbatch')
+    else:
+        remove_file = False
+
+    with open(sbatch_file, 'w') as f:
         f.write(sbatch_script)
 
-    command = "sbatch %s" % file
-    if not delete_file:
+    command = "sbatch %s" % sbatch_file
+    if not sbatch_file:
         print("Executing: %s" % command)
     subprocess.Popen(shlex.split(command)).communicate()
 
-    if delete_file:
-        os.remove(file)
+    if remove_file:
+        os.remove(sbatch_script)
 
 
 def count_jobs(string=''):
