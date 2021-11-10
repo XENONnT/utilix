@@ -68,7 +68,7 @@ def submit_job(jobstring,
         import time
 
         job_log = 'job.log'
-        batchq.submit_job('echo say hi', log=job_log)
+        batchq.submit_job('echo "say hi"', log=job_log)
 
         time.sleep(10) # Allow the job to run
         for line in open(job_log):
