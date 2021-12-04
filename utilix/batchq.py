@@ -127,7 +127,7 @@ def submit_job(jobstring,
     subprocess.Popen(shlex.split(command)).communicate()
 
     if remove_file:
-        os.remove(sbatch_script)
+        os.remove(sbatch_file)
 
 
 def count_jobs(string=''):
