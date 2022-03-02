@@ -100,7 +100,7 @@ def submit_job(jobstring,
         # need to wrap job into another executable
         _, exec_file = tempfile.mkstemp(suffix='.sh')
         jobstring = singularity_wrap(jobstring, container, bind)
-        jobstring = 'unset X509_CERT_DIR\n' + 'module load singularity\n' + jobstring
+        jobstring = 'unset X509_CERT_DIR CUTAX_LOCATION\n' + 'module load singularity\n' + jobstring
 
     if not hours is None:
         hours = '#SBATCH --time={:02d}:{:02d}:{:02d}'.format(int(hours), int(hours * 60 % 60), int(hours * 60 % 60 * 60 % 60))
