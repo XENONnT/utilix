@@ -35,12 +35,14 @@ def default_env():
     return DEFAULT_ENV
 
 class ProcessingRequest(rframe.BaseSchema):
+    '''Schema definition for a processing request
+    '''
     _NAME = 'processing_requests'
 
     data_type: str = rframe.Index()
     lineage_hash: str = rframe.Index()
     run_id: str = rframe.Index()
-    
+    destination:  Literal['OSG','DALI'] = rframe.Index(default='DALI')
     user: str = pydantic.Field(default_factory=xeauth_user)
     request_date: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow)
     
@@ -61,6 +63,7 @@ class ProcessingJob(rframe.BaseSchema):
 
     job_id: str = rframe.Index()
     location: Literal['OSG','DALI','OTHER'] = rframe.Index()
+    destination:  Literal['OSG','DALI','OTHER'] = rframe.Index()
     env: str = rframe.Index()
     context: str = rframe.Index()
     data_type: str = rframe.Index()
@@ -117,7 +120,10 @@ try:
     import tqdm
 
     @strax.Context.add_method
-    def request_processing(context, run_ids, data_type, priority=-1, comments='', token=None, submit=True):
+    def request_processing(context, run_ids, data_type,
+                           priority=-1, comments='',
+                           destination='DALI',
+                           token=None, submit=True):
         client = processing_api(token=token, readonly=False)
 
         run_ids = strax.to_str_tuple(run_ids)
@@ -130,13 +136,14 @@ try:
                           lineage_hash=lineage_hash,
                           run_id=run_id,
                           priority=priority,
+                          destination=destination,
                           comments=comments)
             
             request = ProcessingRequest(**kwargs)
             requests.append(request)
             if submit:
                 request.save(client)
-                
+
         if len(requests) == 1:
             return requests[0]
         return requests
