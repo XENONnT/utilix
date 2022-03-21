@@ -1,8 +1,8 @@
 import os
-import straxen
 import xeauth
 import pymongo
 import rframe
+import requests
 from fastapi import FastAPI, Request, Depends, status, HTTPException
 from fastapi.security import HTTPBearer
 from typing import Any, Optional, Union, List 
@@ -56,7 +56,7 @@ def verfiy_write_auth(auth: str = Depends(token_auth_scheme)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-
+# Serve each schema at its own endpoint
 for name, schema in schemas.items():
 
     collection = db[name]
@@ -69,7 +69,30 @@ for name, schema in schemas.items():
              can_write = Depends(verfiy_write_auth))
     app.include_router(router)
 
-
+# Root endpoint serves list of schema names
 @app.get("/", response_model=List[str])
 def list_schemas():
     return list(schemas)
+
+# ------------ TODO: Automated job submission logic ------------- #
+# 
+# Step 1: Find environment that can produce the requested data
+
+DEFAULT_ENV = '2022.03.5'
+ENV_TAGS_URL = 'https://api.github.com/repos/xenonnt/base_environment/git/matching-refs/tags/'
+
+# helper function to read all tags from github
+def get_envs():
+    r = requests.get(ENV_TAGS_URL)
+    if not r.ok:
+        return []
+    tags = r.json()
+    tagnames = [tag['ref'][10:] for tag in tags if tag['ref'] ]
+    return tagnames
+
+# Option 1: just go from newest to last env until one has the correct hash?
+# Option 2: Lookup contexts from mongodb and use env listed there.
+
+# step 2: Find best site for the requested job, e.g by location  of dependencies
+
+# Step 3: Submit job to site with environment 

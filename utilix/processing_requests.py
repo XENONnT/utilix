@@ -76,14 +76,15 @@ class ProcessingJob(rframe.BaseSchema):
 def xeauth_login(readonly=True):
     try:
         import xeauth
-        xetoken = xeauth.cmt_login(scope='write:all')
+        scope = 'read:all' if readonly else 'write:all'
+        xetoken = xeauth.cmt_login(scope=scope)
         username = xetoken.profile.get('name', None)
         if username is not None:
             os.environ['XEAUTH_USER'] = username
 
         return xetoken.access_token
     except ImportError: 
-        warn('xeuath not installed, cannot retrieve token automatically.')
+        warn('xeauth not installed, cannot retrieve token automatically.')
 
 
 def processing_api(token=None, readonly=True):
@@ -116,14 +117,29 @@ try:
     import tqdm
 
     @strax.Context.add_method
-    def request_processing(context, run_ids, data_type, priority=-1, comments='', token=None):
+    def request_processing(context, run_ids, data_type, priority=-1, comments='', token=None, submit=True):
         client = processing_api(token=token, readonly=False)
-        for run_id in tqdm.tqdm(strax.str_tuple(run_ids), desc='Requesting processing'):
+
+        run_ids = strax.to_str_tuple(run_ids)
+        requests = []
+        for run_id in tqdm.tqdm(run_ids, desc='Requesting processing'):
+            
             lineage_hash = context.key_for(run_id, data_type).lineage_hash
-            kwargs = dict(data_type=data_type, lineage_hash=lineage_hash,
-                        run_id=run_id, priority=priority, comments=comments)
+
+            kwargs = dict(data_type=data_type, 
+                          lineage_hash=lineage_hash,
+                          run_id=run_id,
+                          priority=priority,
+                          comments=comments)
+            
             request = ProcessingRequest(**kwargs)
-            request.save(client)
+            requests.append(request)
+            if submit:
+                request.save(client)
+                
+        if len(requests) == 1:
+            return requests[0]
+        return requests
 
 except ImportError:
     pass

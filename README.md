@@ -165,7 +165,31 @@ If you need to use different databases or do not want to use the information lis
     >>> xe1t_coll, xe1t_db, xe1t_user, xe1t_pw, xe1t_url = [ask someone]
     >>> xe1t_collection = pymongo_collection(xe1t_coll, database=xe1t_coll, user=xe1t_user, password=xe1t_pw, url=xe1t_url)
        
-       
+## Data processing requests
+You may find yourself missing some data which requires a large amount of resources to process. In these cases, you can submit a processing request to the computing team.
+
+If you have utilix installed, your context will have the `request_processing` method.
+
+Example:
+
+```python
+
+    st = straxen.test_utils.nt_test_context()
+
+    requests = st.request_processing('012882', # can be a tuple of run_ids
+                                     'event_basics', # must be a single data type
+                                     priority=1, # higher values mean higher priority, defaults to -1
+                                     comments='this is for the new elife analysis', # add some comments to help people reviewing the requests.
+                                     submit=True, #If you use `submit=False` the requests objects will be created but no submitted.
+                                     )
+
+```
+The script will open a web-browser if possible, and also print out the URL you need to visit to authorize the script to operate on your behalf. After you login using github and authorize the request, the script will get a token and save it in memory for the next requests.
+
+
+
+
+
 ## TODO
 We want to implement functionality for easy job submission to the Midway batch queue.
 Eventually we want to do the same for OSG. 
