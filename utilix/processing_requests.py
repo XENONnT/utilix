@@ -54,7 +54,7 @@ class ProcessingRequest(rframe.BaseSchema):
     def pre_update(self, datasource, new):
         if new.user != self.user:
             raise ValueError(new.user)
-        if new.run != self.run:
+        if new.run_id != self.run_id:
             raise ValueError(new.run)
 
 
