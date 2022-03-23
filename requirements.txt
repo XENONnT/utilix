@@ -1,4 +1,4 @@
-pymongo
+pymongo<4.0.0
 requests
 tqdm
 pandas
