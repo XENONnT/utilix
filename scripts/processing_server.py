@@ -1,4 +1,5 @@
 import os
+import utilix
 import xeauth
 import pymongo
 import rframe
@@ -14,13 +15,6 @@ schemas = {
     'processing_job': ProcessingJob,
 }
 
-mongo_user = os.getenv('MONGO_USER')
-mongo_pass = os.getenv('MONGO_PASS')
-
-url = f'mongodb://{mongo_user}:{mongo_pass}@xenon1t-daq.lngs.infn.it:27017/cmt2'
-
-client = pymongo.MongoClient(url)
-db = client['cmt2']
 
 app = FastAPI()
 
@@ -59,7 +53,7 @@ def verfiy_write_auth(auth: str = Depends(token_auth_scheme)):
 # Serve each schema at its own endpoint
 for name, schema in schemas.items():
 
-    collection = db[name]
+    collection = utilix.xent_collection(name, database='cmt2')
 
     router = rframe.SchemaRouter(
              schema,
@@ -78,7 +72,8 @@ def list_schemas():
 # 
 # Step 1: Find environment that can produce the requested data
 
-DEFAULT_ENV = '2022.03.5'
+DEFAULT_ENV = os.getenv('PROCESSING_DEFAULT_ENV', '2022.03.5')
+
 ENV_TAGS_URL = 'https://api.github.com/repos/xenonnt/base_environment/git/matching-refs/tags/'
 
 # helper function to read all tags from github

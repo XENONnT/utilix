@@ -13,6 +13,13 @@ ENV_TAGS_URL = 'https://api.github.com/repos/xenonnt/base_environment/git/matchi
 
 API_URL = 'http://api.cmt.yossisprojects.com'
 
+RSE = Literal['SURFSARA_USERDISK',
+              'SDSC_USERDISK', 
+              'LNGS_USERDISK', 
+              'UC_OSG_USERDISK', 
+              'UC_DALI_USERDISK', 
+              'CNAF_USERDISK']
+
 
 def xeauth_user():
     return os.environ.get('XEAUTH_USER', 'UNKNOWN')
@@ -42,7 +49,7 @@ class ProcessingRequest(rframe.BaseSchema):
     data_type: str = rframe.Index()
     lineage_hash: str = rframe.Index()
     run_id: str = rframe.Index()
-    destination:  Literal['OSG','DALI'] = rframe.Index(default='DALI')
+    destination: RSE = rframe.Index(default='UC_DALI_USERDISK')
     user: str = pydantic.Field(default_factory=xeauth_user)
     request_date: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow)
     
@@ -62,8 +69,8 @@ class ProcessingJob(rframe.BaseSchema):
     _NAME = 'processing_jobs'
 
     job_id: str = rframe.Index()
-    location: Literal['OSG','DALI','OTHER'] = rframe.Index()
-    destination:  Literal['OSG','DALI','OTHER'] = rframe.Index()
+    location: RSE = rframe.Index()
+    destination: RSE = rframe.Index()
     env: str = rframe.Index()
     context: str = rframe.Index()
     data_type: str = rframe.Index()
