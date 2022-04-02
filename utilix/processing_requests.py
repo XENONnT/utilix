@@ -6,12 +6,17 @@ import getpass
 import pydantic
 import requests
 from warnings import warn
+from . import uconfig
 
 CACHE = {}
 DEFAULT_ENV = '2022.03.5'
 ENV_TAGS_URL = 'https://api.github.com/repos/xenonnt/base_environment/git/matching-refs/tags/'
 
 API_URL = 'http://api.cmt.yossisprojects.com'
+
+if uconfig is not None:
+    API_URL = uconfig.get('cmt2', 'api_url', fallback=API_URL)
+
 
 RSE = Literal['SURFSARA_USERDISK',
               'SDSC_USERDISK', 
@@ -22,7 +27,8 @@ RSE = Literal['SURFSARA_USERDISK',
 
 
 def xeauth_user():
-    return os.environ.get('XEAUTH_USER', 'UNKNOWN')
+    return uconfig.get('cmt2', 'api_user', fallback='UNKNOWN')
+
 
 def get_envs():
     r = requests.get(ENV_TAGS_URL)
@@ -86,36 +92,40 @@ class ProcessingJob(rframe.BaseSchema):
 def xeauth_login(readonly=True):
     try:
         import xeauth
-        scope = 'read:all' if readonly else 'write:all'
-        xetoken = xeauth.cmt_login(scope=scope)
-        username = xetoken.profile.get('name', None)
-        if username is not None:
-            os.environ['XEAUTH_USER'] = username
+        scopes = ['read:all'] if readonly else ['read:all', 'write:all']
+        audience = uconfig.get('cmt2', 'api_audience', fallback='https://api.cmt.xenonnt.org')
 
+        username = uconfig.get('cmt2', 'api_user', fallback='UNKNOWN')
+            
+        password = uconfig.get('cmt2', 'api_password', fallback=None)
+
+        if password is None:
+            xetoken = xeauth.login(scopes=scopes, audience=audience)
+        else:
+            xetoken = xeauth.user_login(username,
+                                        password,
+                                        scopes=scopes)
+        
         return xetoken.access_token
-    except ImportError: 
-        warn('xeauth not installed, cannot retrieve token automatically.')
+    except: 
+        return None
 
 
 def processing_api(token=None, readonly=True):
-    cache_key = f'api_token_readonly_{readonly}'
 
     if token is None:
-        token = CACHE.get(cache_key, None)
-    
-    if token is None:
-        token = os.environ.get('PROCESSING_API_TOKEN', None)
+        token = uconfig.get('cmt2', 'api_token', fallback=None)
     
     if token is None:
         token = xeauth_login(readonly=readonly)
     
     if token is None:
         token = getpass.getpass('API token: ')
-
+    
     headers = {}
     if token:
         headers['Authorization'] = f"Bearer {token}"
-        CACHE[cache_key] = token
+        token = uconfig.set('cmt2', 'api_token', token)
 
     client = rframe.RestClient(f'{API_URL}/processing_requests',
                                  headers=headers,)
