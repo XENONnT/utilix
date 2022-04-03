@@ -139,7 +139,7 @@ try:
     @strax.Context.add_method
     def request_processing(context, run_ids, data_type,
                            priority=-1, comments='',
-                           destination='DALI',
+                           destination='UC_DALI_USERDISK',
                            token=None, submit=True):
         client = processing_api(token=token, readonly=False)
 
