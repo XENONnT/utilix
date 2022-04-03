@@ -12,7 +12,7 @@ CACHE = {}
 DEFAULT_ENV = '2022.03.5'
 ENV_TAGS_URL = 'https://api.github.com/repos/xenonnt/base_environment/git/matching-refs/tags/'
 
-API_URL = 'http://api.cmt.yossisprojects.com'
+API_URL = 'https://api.xedocs.yossisprojects.com'
 
 if uconfig is not None:
     API_URL = uconfig.get('cmt2', 'api_url', fallback=API_URL)
@@ -70,6 +70,10 @@ class ProcessingRequest(rframe.BaseSchema):
         if new.run_id != self.run_id:
             raise ValueError(new.run)
 
+    @classmethod
+    def default_datasource(cls):
+        return processing_api()
+
 
 class ProcessingJob(rframe.BaseSchema):
     _NAME = 'processing_jobs'
@@ -111,11 +115,29 @@ def xeauth_login(readonly=True):
         return None
 
 
-def processing_api(token=None, readonly=True):
+def valid_token(token, readonly=True):
+    if readonly:
+        scope = 'read:all'
+    else:
+        scope = 'write:all'
+
+    try:
+        import xeauth
+        claims = xeauth.certs.extract_verified_claims(token)
+        assert scope in claims.get('scope', '')
+    except:
+        return False
+
+    return True
+
+def processing_api(token=None, readonly=False):
 
     if token is None:
         token = uconfig.get('cmt2', 'api_token', fallback=None)
-    
+
+    if not valid_token(token, readonly=readonly):
+        token = None
+
     if token is None:
         token = xeauth_login(readonly=readonly)
     
@@ -130,7 +152,6 @@ def processing_api(token=None, readonly=True):
     client = rframe.RestClient(f'{API_URL}/processing_requests',
                                  headers=headers,)
     return client
-
 
 try:
     import strax
