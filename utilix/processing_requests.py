@@ -74,6 +74,16 @@ class ProcessingRequest(rframe.BaseSchema):
     def default_datasource(cls):
         return processing_api()
 
+    def latest_context(self):
+        import utilix
+        import pymongo
+
+        contexts = utilix.xent_collection('contexts')
+        ctx = contexts.find_one({f'hashes.{self.data_type}': self.lineage_hash},
+                  projection={'name': 1,'tag': 1, '_id': 0},
+                  sort=[('date_added', pymongo.DESCENDING)])
+        return ctx
+
 
 class ProcessingJob(rframe.BaseSchema):
     _NAME = 'processing_jobs'
@@ -99,7 +109,7 @@ def xeauth_login(readonly=True):
         scopes = ['read:all'] if readonly else ['read:all', 'write:all']
         audience = uconfig.get('cmt2', 'api_audience', fallback='https://api.cmt.xenonnt.org')
 
-        username = uconfig.get('cmt2', 'api_user', fallback='UNKNOWN')
+        username = uconfig.get('cmt2', 'api_user', fallback='unknown')
             
         password = uconfig.get('cmt2', 'api_password', fallback=None)
 
