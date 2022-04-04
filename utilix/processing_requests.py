@@ -1,6 +1,7 @@
 import os
 from typing import Literal
 import rframe
+import uuid
 import datetime
 import getpass
 import pydantic
@@ -18,7 +19,7 @@ if uconfig is not None:
     API_URL = uconfig.get('cmt2', 'api_url', fallback=API_URL)
 
 
-RSE = Literal['SURFSARA_USERDISK',
+RSE_TYPE = Literal['SURFSARA_USERDISK',
               'SDSC_USERDISK', 
               'LNGS_USERDISK', 
               'UC_OSG_USERDISK', 
@@ -50,12 +51,12 @@ def default_env():
 class ProcessingRequest(rframe.BaseSchema):
     '''Schema definition for a processing request
     '''
-    _NAME = 'processing_requests'
+    _ALIAS = 'processing_requests'
 
     data_type: str = rframe.Index()
     lineage_hash: str = rframe.Index()
     run_id: str = rframe.Index()
-    destination: RSE = rframe.Index(default='UC_DALI_USERDISK')
+    destination: RSE_TYPE = rframe.Index(default='UC_DALI_USERDISK')
     user: str = pydantic.Field(default_factory=xeauth_user)
     request_date: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow)
     
@@ -80,27 +81,38 @@ class ProcessingRequest(rframe.BaseSchema):
 
         contexts = utilix.xent_collection('contexts')
         ctx = contexts.find_one({f'hashes.{self.data_type}': self.lineage_hash},
-                  projection={'name': 1,'tag': 1, '_id': 0},
+                  projection={'name': 1, 'env': '$tag', '_id': 0},
                   sort=[('date_added', pymongo.DESCENDING)])
         return ctx
 
+    def create_job(self):
+        kwargs = self.latest_context()
+        kwargs.update(self.dict())
+        return ProcessingJob(**kwargs)
+
 
 class ProcessingJob(rframe.BaseSchema):
-    _NAME = 'processing_jobs'
+    _ALIAS = 'processing_jobs'
 
-    job_id: str = rframe.Index()
-    location: RSE = rframe.Index()
-    destination: RSE = rframe.Index()
+    job_id: uuid.UUID = rframe.Index(default_factory=uuid.uuid4)
+    destination: RSE_TYPE = rframe.Index()
     env: str = rframe.Index()
     context: str = rframe.Index()
     data_type: str = rframe.Index()
     run_id: str = rframe.Index()
     lineage_hash: str = rframe.Index()
     
-    submission_time: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow)
+    location: RSE_TYPE = None
+    submission_time: datetime.datetime = None
     completed: bool = False
     progress: int = 0
     error: str = ''
+
+    def create_workflow(self):
+        raise NotImplementedError
+
+    def submit(self):
+        raise NotImplementedError
 
 
 def xeauth_login(readonly=True):
