@@ -27,7 +27,7 @@ RSE = Literal['SURFSARA_USERDISK',
 
 
 def xeauth_user():
-    return uconfig.get('cmt2', 'api_user', fallback='UNKNOWN')
+    return uconfig.get('cmt2', 'api_user', fallback='unknown')
 
 
 def get_envs():
@@ -109,6 +109,8 @@ def xeauth_login(readonly=True):
             xetoken = xeauth.user_login(username,
                                         password,
                                         scopes=scopes)
+
+        uconfig.set('cmt2', 'api_user', xetoken.username)
         
         return xetoken.access_token
     except: 
