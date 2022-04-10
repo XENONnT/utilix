@@ -13,7 +13,10 @@ import utilix
 
 CACHE = {}
 DEFAULT_ENV = '2022.03.5'
+ENV_PATH = "/cvmfs/singularity.opensciencegrid.org/xenonnt/base-environment:{tag}"
+
 ENV_TAGS_URL = 'https://api.github.com/repos/xenonnt/base_environment/git/matching-refs/tags/'
+
 
 API_URL = 'https://api.xedocs.yossisprojects.com'
 
@@ -113,10 +116,12 @@ class ProcessingJob(rframe.BaseSchema):
 
     def create_workflow(self, **kwargs):
         from outsource.Outsource import Outsource
-
-        wf = Outsource([self.run_id], 
-                    context=self.context, 
-                    image=self.env,
+        
+        image = ENV_PATH.format(tag=self.env)
+        wf = Outsource([int(self.run_id)], 
+                    context_name=self.context, 
+                    image=image,
+                    wf_id=str(self.job_id),
                     **kwargs)
         return wf
 
