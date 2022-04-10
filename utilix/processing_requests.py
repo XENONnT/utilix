@@ -1,3 +1,4 @@
+from multiprocessing import context
 import os
 from typing import Literal
 import rframe
@@ -82,7 +83,7 @@ class ProcessingRequest(rframe.BaseSchema):
 
         contexts = utilix.xent_collection('contexts')
         ctx = contexts.find_one({f'hashes.{self.data_type}': self.lineage_hash},
-                  projection={'name': 1, 'env': '$tag', '_id': 0},
+                  projection={'context': '$name', 'env': '$tag', '_id': 0},
                   sort=[('date_added', pymongo.DESCENDING)])
         return dict(ctx)
 
@@ -110,11 +111,18 @@ class ProcessingJob(rframe.BaseSchema):
     progress: int = 0
     error: str = ''
 
-    def create_workflow(self):
-        raise NotImplementedError
+    def create_workflow(self, **kwargs):
+        from outsource.Outsource import Outsource
 
-    def submit(self):
-        raise NotImplementedError
+        wf = Outsource([self.run_id], 
+                    context=self.context, 
+                    image=self.env,
+                    **kwargs)
+        return wf
+
+    def submit(self, **kwargs):
+        wf = self.create_workflow(**kwargs)
+        return wf.submit_workflow()
 
 
 def xeauth_login(readonly=True):
