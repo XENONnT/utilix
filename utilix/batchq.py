@@ -32,16 +32,12 @@ def make_executable(path):
 
 def singularity_wrap(jobstring, image, bind):
     """Wraps a jobscript into another executable file that can be passed to singularity exec"""
-    _, exec_file = tempfile.mkstemp(suffix='.sh', dir=TMPDIR)
+    file_descriptor, exec_file = tempfile.mkstemp(suffix='.sh', dir=TMPDIR)
     make_executable(exec_file)
-
+    os.write(file_descriptor, bytes(jobstring, 'utf-8'))
     bind_string = " ".join([f"--bind {b}" for b in bind])
     image = os.path.join(SINGULARITY_DIR, image)
-    new_job_string = f"""cat > {exec_file} << EOF
-#!/bin/bash
-{jobstring}
-EOF
-singularity exec {bind_string} {image} {exec_file}
+    new_job_string = f"""singularity exec {bind_string} {image} {exec_file}
 rm {exec_file}
 """
     return new_job_string
