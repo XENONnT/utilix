@@ -98,7 +98,6 @@ def submit_job(jobstring,
 
     if container:
         # need to wrap job into another executable
-        _, exec_file = tempfile.mkstemp(suffix='.sh')
         jobstring = singularity_wrap(jobstring, container, bind)
         jobstring = 'unset X509_CERT_DIR CUTAX_LOCATION\n' + 'module load singularity\n' + jobstring
 
