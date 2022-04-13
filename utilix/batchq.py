@@ -40,6 +40,7 @@ def singularity_wrap(jobstring, image, bind):
     new_job_string = f"""singularity exec {bind_string} {image} {exec_file}
 rm {exec_file}
 """
+    os.close(file_descriptor)
     return new_job_string
 
 
