@@ -10,6 +10,7 @@ import requests
 from itertools import product
 from warnings import warn
 import utilix
+from utilix.rundb import xent_collection
 
 CACHE = {}
 DEFAULT_ENV = '2022.03.5'
@@ -62,13 +63,14 @@ class ProcessingRequest(rframe.BaseSchema):
     lineage_hash: str = rframe.Index()
     run_id: str = rframe.Index()
     destination: RSE_TYPE = rframe.Index(default='UC_DALI_USERDISK')
+
     user: str = pydantic.Field(default_factory=xeauth_user)
     request_date: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow)
-    
     priority: int = -1
-
     comments: str = ''
-    
+
+    progress = pydantic.confloat(default=0, ge=0, le=100)
+    done: bool = False
     
     def pre_update(self, datasource, new):
         if new.user != self.user:
@@ -78,7 +80,7 @@ class ProcessingRequest(rframe.BaseSchema):
 
     @classmethod
     def default_datasource(cls):
-        return processing_api()
+        return xent_collection(collection=cls._ALIAS, database='xedocs')
 
     def latest_context(self):
         import utilix
@@ -100,7 +102,6 @@ class ProcessingRequest(rframe.BaseSchema):
 class ProcessingJob(rframe.BaseSchema):
     _ALIAS = 'processing_jobs'
 
-    job_id: uuid.UUID = rframe.Index()
     destination: RSE_TYPE = rframe.Index()
     env: str = rframe.Index()
     context: str = rframe.Index()
@@ -113,6 +114,10 @@ class ProcessingJob(rframe.BaseSchema):
     completed: bool = False
     progress: int = 0
     error: str = ''
+
+    @classmethod
+    def default_datasource(cls):
+        return xent_collection(collection=cls._ALIAS, database='xedocs')
 
     def create_workflow(self, **kwargs):
         from outsource.Outsource import Outsource
@@ -207,7 +212,6 @@ try:
                            priority=-1, comments='',
                            destination='UC_DALI_USERDISK',
                            token=None, submit=True):
-        client = processing_api(token=token, readonly=False)
 
         run_ids = strax.to_str_tuple(run_ids)
         data_types = strax.to_str_tuple(data_types)
@@ -228,7 +232,7 @@ try:
             request = ProcessingRequest(**kwargs)
             requests.append(request)
             if submit:
-                request.save(client)
+                request.save()
 
         if len(requests) == 1:
             return requests[0]
