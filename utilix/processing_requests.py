@@ -69,7 +69,7 @@ class ProcessingRequest(rframe.BaseSchema):
     priority: int = -1
     comments: str = ''
 
-    progress = pydantic.confloat(default=0, ge=0, le=100)
+    progress: float = pydantic.Field(default=0, ge=0, le=100)
     done: bool = False
     
     def pre_update(self, datasource, new):
