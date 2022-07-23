@@ -3,4 +3,3 @@ requests
 tqdm
 pandas
 commentjson
-rframe
