@@ -14,6 +14,7 @@ sbatch_template = """#!/bin/bash
 #SBATCH --partition={partition}
 #SBATCH --mem-per-cpu={mem_per_cpu}
 #SBATCH --cpus-per-task={cpus_per_task}
+{node}
 {hours}
 
 {job}
@@ -57,6 +58,7 @@ def submit_job(jobstring,
                bind=('/dali', '/project2', os.path.dirname(TMPDIR)),
                cpus_per_task=1,
                hours=None,
+               node=None,
                **kwargs
                ):
     """
@@ -86,6 +88,7 @@ def submit_job(jobstring,
     :param bind: which paths to add to the container
     :param cpus_per_task: cpus requested for job
     :param hours: max hours of a job
+    :param node: define a certain node to submit your job should be submitted to 
     :param kwargs: are ignored
     :return: None
     """
@@ -102,9 +105,15 @@ def submit_job(jobstring,
         hours = '#SBATCH --time={:02d}:{:02d}:{:02d}'.format(int(hours), int(hours * 60 % 60), int(hours * 60 % 60 * 60 % 60))
     else:
         hours = ''
+
+    if not node is None:
+        node = '#SBATCH --nodelist={node}'.format(node=node)
+    else:
+        node = ''
+
     sbatch_script = sbatch_template.format(jobname=jobname, log=log, qos=qos, partition=partition,
                                            account=account, job=jobstring, mem_per_cpu=mem_per_cpu,
-                                           cpus_per_task=cpus_per_task, hours=hours)
+                                           cpus_per_task=cpus_per_task, hours=hours, node=node)
 
     if dry_run:
         print("=== DRY RUN ===")
