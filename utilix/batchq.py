@@ -15,6 +15,7 @@ sbatch_template = """#!/bin/bash
 #SBATCH --mem-per-cpu={mem_per_cpu}
 #SBATCH --cpus-per-task={cpus_per_task}
 {node}
+{exclude_nodes}
 {hours}
 
 {job}
@@ -59,6 +60,7 @@ def submit_job(jobstring,
                cpus_per_task=1,
                hours=None,
                node=None,
+               exclude_nodes=None,
                **kwargs
                ):
     """
@@ -88,7 +90,8 @@ def submit_job(jobstring,
     :param bind: which paths to add to the container
     :param cpus_per_task: cpus requested for job
     :param hours: max hours of a job
-    :param node: define a certain node to submit your job should be submitted to 
+    :param node: define a certain node to submit your job should be submitted to
+    :param exclude_nodes: define a list of nodes which should be excluded from submission
     :param kwargs: are ignored
     :return: None
     """
@@ -111,9 +114,15 @@ def submit_job(jobstring,
     else:
         node = ''
 
+    if not exclude_nodes is None:
+        exclude_nodes = '#SBATCH --exclude={exclude_nodes}'.format(exclude_nodes=exclude_nodes)
+    else:
+        exclude_nodes = ''
+
     sbatch_script = sbatch_template.format(jobname=jobname, log=log, qos=qos, partition=partition,
                                            account=account, job=jobstring, mem_per_cpu=mem_per_cpu,
-                                           cpus_per_task=cpus_per_task, hours=hours, node=node)
+                                           cpus_per_task=cpus_per_task, hours=hours, node=node,
+                                           exclude_nodes=exclude_nodes)
 
     if dry_run:
         print("=== DRY RUN ===")
