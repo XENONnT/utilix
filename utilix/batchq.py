@@ -110,11 +110,16 @@ def submit_job(jobstring,
         hours = ''
 
     if not node is None:
+        if not isinstance(node, str):
+            raise ValueError(f'node should be str but given {type(node)}')
         node = '#SBATCH --nodelist={node}'.format(node=node)
     else:
         node = ''
 
     if not exclude_nodes is None:
+        if not isinstance(node, str):
+            raise ValueError(f'exclude_nodes should be str but given {type(exclude_nodes)}')
+            # string like 'myCluster01,myCluster02,myCluster03' or 'myCluster[01-09]'
         exclude_nodes = '#SBATCH --exclude={exclude_nodes}'.format(exclude_nodes=exclude_nodes)
     else:
         exclude_nodes = ''
