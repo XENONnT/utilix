@@ -3,6 +3,7 @@ import os
 import tempfile
 import shlex
 from utilix import logger
+import getpass
 
 sbatch_template = """#!/bin/bash
 
@@ -21,8 +22,36 @@ sbatch_template = """#!/bin/bash
 {job}
 """
 
-SINGULARITY_DIR = '/project2/lgrandi/xenonnt/singularity-images'
-TMPDIR = os.path.join(os.environ.get('SCRATCH', '.'), 'tmp')
+BIND = {
+    'dali': ['/dali'],
+    'lgrandi': ['/dali', '/project2', '/project'],
+    'xenon1t': ['/dali', '/project2', '/project'],
+    'broadwl': ['/dali', '/project2', '/project'],
+    'kicp': ['/dali', '/project2', '/project'],
+}
+
+SINGULARITY_DIR = {
+    'dali': '/dali/lgrandi/xenonnt/singularity-images',
+    'lgrandi': '/project2/lgrandi/xenonnt/singularity-images',
+    'xenon1t': '/project2/lgrandi/xenonnt/singularity-images',
+    'broadwl': '/project2/lgrandi/xenonnt/singularity-images',
+    'kicp': '/project2/lgrandi/xenonnt/singularity-images',
+}
+
+TMPDIR = {
+    'dali': os.path.expanduser('/dali/lgrandi/%s/tmp'%(getpass.getuser())),
+    'lgrandi': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
+    'xenon1t': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
+    'broadwl': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
+    'kicp': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
+}
+
+
+def check_bind(bind, partition):
+    """Check if we are binding non-dali storage when we are on dali compute node"""
+    if partition == 'dali':
+        bind = ('/dali', TMPDIR['dali'])
+    return bind
 
 
 def make_executable(path):
@@ -32,13 +61,13 @@ def make_executable(path):
     os.chmod(path, mode)
 
 
-def singularity_wrap(jobstring, image, bind):
+def singularity_wrap(jobstring, image, bind, partition):
     """Wraps a jobscript into another executable file that can be passed to singularity exec"""
-    file_descriptor, exec_file = tempfile.mkstemp(suffix='.sh', dir=TMPDIR)
+    file_descriptor, exec_file = tempfile.mkstemp(suffix='.sh', dir=TMPDIR[partition])
     make_executable(exec_file)
     os.write(file_descriptor, bytes('#!/bin/bash\n' + jobstring, 'utf-8'))
     bind_string = " ".join([f"--bind {b}" for b in bind])
-    image = os.path.join(SINGULARITY_DIR, image)
+    image = os.path.join(SINGULARITY_DIR[partition], image)
     new_job_string = f"""singularity exec {bind_string} {image} {exec_file}
 rm {exec_file}
 """
@@ -64,7 +93,7 @@ def submit_job(jobstring,
                **kwargs
                ):
     """
-    Submit a job to the dali batch queue
+    Submit a job to the dali/midway batch queue
 
     EXAMPLE
         from utilix import batchq
@@ -87,7 +116,7 @@ def submit_job(jobstring,
     :param dry_run: only print how the job looks like
     :param mem_per_cpu: mb requested for job
     :param container: name of the container to activate
-    :param bind: which paths to add to the container
+    :param bind: which paths to add to the container. This is immutable when you specified dali as partition
     :param cpus_per_task: cpus requested for job
     :param hours: max hours of a job
     :param node: define a certain node to submit your job should be submitted to
@@ -97,11 +126,13 @@ def submit_job(jobstring,
     """
     if 'delete_file' in kwargs:
         logger.warning('"delete_file" option for "submit_job" has been removed, ignoring for now')
-    os.makedirs(TMPDIR, exist_ok=True)
+    os.makedirs(TMPDIR[partition], exist_ok=True)
+    # overwrite bind to make sure dali is isolated
+    bind = check_bind(bind, partition)
 
     if container:
         # need to wrap job into another executable
-        jobstring = singularity_wrap(jobstring, container, bind)
+        jobstring = singularity_wrap(jobstring, container, bind, partition)
         jobstring = 'unset X509_CERT_DIR CUTAX_LOCATION\n' + 'module load singularity\n' + jobstring
 
     if not hours is None:
