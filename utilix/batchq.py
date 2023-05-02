@@ -122,6 +122,10 @@ def submit_job(jobstring,
     # overwrite bind to make sure dali is isolated
     bind = overwrite_dali_bind(bind, partition)
 
+    # temporary dirty fix. will remove these 3 from xenon1t soon.
+    if partition == 'xenon1t' and exclude_nodes is None:
+        exclude_nodes = 'dali028,dali029,dali030'
+
     if container:
         # need to wrap job into another executable
         jobstring = singularity_wrap(jobstring, container, bind, partition)
