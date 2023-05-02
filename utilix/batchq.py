@@ -22,14 +22,6 @@ sbatch_template = """#!/bin/bash
 {job}
 """
 
-BIND = {
-    'dali': ['/dali'],
-    'lgrandi': ['/dali', '/project2', '/project'],
-    'xenon1t': ['/dali', '/project2', '/project'],
-    'broadwl': ['/dali', '/project2', '/project'],
-    'kicp': ['/dali', '/project2', '/project'],
-}
-
 SINGULARITY_DIR = {
     'dali': '/dali/lgrandi/xenonnt/singularity-images',
     'lgrandi': '/project2/lgrandi/xenonnt/singularity-images',
@@ -50,7 +42,7 @@ TMPDIR = {
 def overwrite_dali_bind(bind, partition):
     """Check if we are binding non-dali storage when we are on dali compute node. If yes, then overwrite"""
     if partition == 'dali':
-        bind = ('/dali', TMPDIR['dali'])
+        bind = ('/dali')
     return bind
 
 
@@ -85,7 +77,7 @@ def submit_job(jobstring,
                dry_run=False,
                mem_per_cpu=1000,
                container='xenonnt-development.simg',
-               bind=('/dali', '/project2', '/project', os.path.dirname(TMPDIR)),
+               bind=['/dali', '/project2', '/project', '/scratch/midway2/%s'%(getpass.getuser()), '/scratch/midway3/%s'%(getpass.getuser())],
                cpus_per_task=1,
                hours=None,
                node=None,
