@@ -47,8 +47,8 @@ TMPDIR = {
 }
 
 
-def check_bind(bind, partition):
-    """Check if we are binding non-dali storage when we are on dali compute node"""
+def overwrite_dali_bind(bind, partition):
+    """Check if we are binding non-dali storage when we are on dali compute node. If yes, then overwrite"""
     if partition == 'dali':
         bind = ('/dali', TMPDIR['dali'])
     return bind
@@ -128,7 +128,7 @@ def submit_job(jobstring,
         logger.warning('"delete_file" option for "submit_job" has been removed, ignoring for now')
     os.makedirs(TMPDIR[partition], exist_ok=True)
     # overwrite bind to make sure dali is isolated
-    bind = check_bind(bind, partition)
+    bind = overwrite_dali_bind(bind, partition)
 
     if container:
         # need to wrap job into another executable
