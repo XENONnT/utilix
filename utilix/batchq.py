@@ -43,6 +43,7 @@ def overwrite_dali_bind(bind, partition):
     """Check if we are binding non-dali storage when we are on dali compute node. If yes, then overwrite"""
     if partition == 'dali':
         bind = ('/dali')
+        print("You are using dali parition, and your bind has been fixed to %s"%(bind))
     return bind
 
 
