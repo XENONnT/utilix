@@ -47,6 +47,30 @@ def overwrite_dali_bind(bind, partition):
     return bind
 
 
+def wrong_log_dir(path):
+    """Check if the directory is NOT in dali"""
+    abs_path = os.path.abspath(path)
+    top_level = abs_path.split('/')[1] 
+    wrong_log_dir = False   
+    if top_level != 'dali':
+        wrong_log_dir = True
+    else:
+        wrong_log_dir = False
+    return wrong_log_dir
+
+
+def overwrite_dali_job_log(path, partition):
+    if partition == 'dali':
+        if wrong_log_dir(path):
+            logname = os.path.abspath(path).split('/')[-1]
+            new_path = TMPDIR['dali']+'/'+logname
+            print('Your log is relocated at: %s'%(new_path))
+            return new_path
+    else:
+        print('Your log is located at: %s'%(os.path.abspath(path)))
+        return path
+
+
 def make_executable(path):
     """Make the file at path executable, see """
     mode = os.stat(path).st_mode
@@ -122,6 +146,9 @@ def submit_job(jobstring,
     os.makedirs(TMPDIR[partition], exist_ok=True)
     # overwrite bind to make sure dali is isolated
     bind = overwrite_dali_bind(bind, partition)
+
+    # overwrite log directory if it is not on dali and you are running on dali.
+    log = overwrite_dali_job_log(log, partition)
 
     # temporary dirty fix. will remove these 3 from xenon1t soon.
     if partition == 'xenon1t' and exclude_nodes is None:
