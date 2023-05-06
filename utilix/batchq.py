@@ -154,7 +154,7 @@ def submit_job(jobstring,
 
     # temporary dirty fix. will remove these 3 from xenon1t soon.
     if partition == 'xenon1t' and exclude_nodes is None:
-        exclude_nodes = 'dali028,dali029,dali030'
+        exclude_nodes = 'dali0[28-30]'
 
     if container:
         # need to wrap job into another executable
