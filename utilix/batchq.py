@@ -66,6 +66,8 @@ def overwrite_dali_job_log(path, partition):
             new_path = TMPDIR['dali']+'/'+logname
             print('Your log is relocated at: %s'%(new_path))
             return new_path
+        else:
+            return path
     else:
         print('Your log is located at: %s'%(os.path.abspath(path)))
         return path
