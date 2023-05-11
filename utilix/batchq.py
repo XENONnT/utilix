@@ -156,8 +156,11 @@ def submit_job(jobstring,
     log = overwrite_dali_job_log(log, partition)
 
     # temporary dirty fix. will remove these 3 from xenon1t soon.
-    if partition == 'xenon1t' and exclude_nodes is None:
-        exclude_nodes = 'dali0[28-30]'
+    if partition == 'xenon1t':
+        if exclude_nodes is None:
+            exclude_nodes = 'dali0[28-30]'
+        else:
+            exclude_nodes += ',dali028,dali029,dali030'
 
     if container:
         # need to wrap job into another executable
