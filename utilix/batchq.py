@@ -42,7 +42,10 @@ TMPDIR = {
 def overwrite_dali_bind(bind, partition):
     """Check if we are binding non-dali storage when we are on dali compute node. If yes, then overwrite"""
     if partition == 'dali':
-        bind = ['/dali', '/dali/lgrandi/xenonnt/xenon.config:/project2/lgrandi/xenonnt/xenon.config']
+        bind = ['/dali', 
+                '/dali/lgrandi/xenonnt/xenon.config:/project2/lgrandi/xenonnt/xenon.config', 
+                '/dali/lgrandi/grid_proxy/xenon_service_proxy:/project2/lgrandi/grid_proxy/xenon_service_proxy'
+                ]
         print("You are using dali parition, and your bind has been fixed to %s"%(bind))
     return bind
 
