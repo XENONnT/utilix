@@ -3,6 +3,7 @@ import os
 import tempfile
 import shlex
 from utilix import logger
+import getpass
 
 sbatch_template = """#!/bin/bash
 
@@ -21,8 +22,58 @@ sbatch_template = """#!/bin/bash
 {job}
 """
 
-SINGULARITY_DIR = '/project2/lgrandi/xenonnt/singularity-images'
-TMPDIR = os.path.join(os.environ.get('SCRATCH', '.'), 'tmp')
+SINGULARITY_DIR = {
+    'dali': '/dali/lgrandi/xenonnt/singularity-images',
+    'lgrandi': '/project2/lgrandi/xenonnt/singularity-images',
+    'xenon1t': '/project2/lgrandi/xenonnt/singularity-images',
+    'broadwl': '/project2/lgrandi/xenonnt/singularity-images',
+    'kicp': '/project2/lgrandi/xenonnt/singularity-images',
+}
+
+TMPDIR = {
+    'dali': os.path.expanduser('/dali/lgrandi/%s/tmp'%(getpass.getuser())),
+    'lgrandi': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
+    'xenon1t': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
+    'broadwl': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
+    'kicp': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
+}
+
+
+def overwrite_dali_bind(bind, partition):
+    """Check if we are binding non-dali storage when we are on dali compute node. If yes, then overwrite"""
+    if partition == 'dali':
+        bind = ['/dali', 
+                '/dali/lgrandi/xenonnt/xenon.config:/project2/lgrandi/xenonnt/xenon.config', 
+                '/dali/lgrandi/grid_proxy/xenon_service_proxy:/project2/lgrandi/grid_proxy/xenon_service_proxy'
+                ]
+        print("You are using dali parition, and your bind has been fixed to %s"%(bind))
+    return bind
+
+
+def wrong_log_dir(path):
+    """Check if the directory is NOT in dali"""
+    abs_path = os.path.abspath(path)
+    top_level = abs_path.split('/')[1] 
+    wrong_log_dir = False   
+    if top_level != 'dali':
+        wrong_log_dir = True
+    else:
+        wrong_log_dir = False
+    return wrong_log_dir
+
+
+def overwrite_dali_job_log(path, partition):
+    if partition == 'dali':
+        if wrong_log_dir(path):
+            logname = os.path.abspath(path).split('/')[-1]
+            new_path = TMPDIR['dali']+'/'+logname
+            print('Your log is relocated at: %s'%(new_path))
+            return new_path
+        else:
+            return path
+    else:
+        print('Your log is located at: %s'%(os.path.abspath(path)))
+        return path
 
 
 def make_executable(path):
@@ -32,13 +83,13 @@ def make_executable(path):
     os.chmod(path, mode)
 
 
-def singularity_wrap(jobstring, image, bind):
+def singularity_wrap(jobstring, image, bind, partition):
     """Wraps a jobscript into another executable file that can be passed to singularity exec"""
-    file_descriptor, exec_file = tempfile.mkstemp(suffix='.sh', dir=TMPDIR)
+    file_descriptor, exec_file = tempfile.mkstemp(suffix='.sh', dir=TMPDIR[partition])
     make_executable(exec_file)
     os.write(file_descriptor, bytes('#!/bin/bash\n' + jobstring, 'utf-8'))
     bind_string = " ".join([f"--bind {b}" for b in bind])
-    image = os.path.join(SINGULARITY_DIR, image)
+    image = os.path.join(SINGULARITY_DIR[partition], image)
     new_job_string = f"""singularity exec {bind_string} {image} {exec_file}
 rm {exec_file}
 """
@@ -56,7 +107,7 @@ def submit_job(jobstring,
                dry_run=False,
                mem_per_cpu=1000,
                container='xenonnt-development.simg',
-               bind=('/dali', '/project2', '/project', os.path.dirname(TMPDIR)),
+               bind=['/project2/lgrandi/xenonnt/dali:/dali', '/project2', '/project', '/scratch/midway2/%s'%(getpass.getuser()), '/scratch/midway3/%s'%(getpass.getuser())],
                cpus_per_task=1,
                hours=None,
                node=None,
@@ -64,7 +115,7 @@ def submit_job(jobstring,
                **kwargs
                ):
     """
-    Submit a job to the dali batch queue
+    Submit a job to the dali/midway batch queue
 
     EXAMPLE
         from utilix import batchq
@@ -87,7 +138,7 @@ def submit_job(jobstring,
     :param dry_run: only print how the job looks like
     :param mem_per_cpu: mb requested for job
     :param container: name of the container to activate
-    :param bind: which paths to add to the container
+    :param bind: which paths to add to the container. This is immutable when you specified dali as partition
     :param cpus_per_task: cpus requested for job
     :param hours: max hours of a job
     :param node: define a certain node to submit your job should be submitted to
@@ -97,11 +148,23 @@ def submit_job(jobstring,
     """
     if 'delete_file' in kwargs:
         logger.warning('"delete_file" option for "submit_job" has been removed, ignoring for now')
-    os.makedirs(TMPDIR, exist_ok=True)
+    os.makedirs(TMPDIR[partition], exist_ok=True)
+    # overwrite bind to make sure dali is isolated
+    bind = overwrite_dali_bind(bind, partition)
+
+    # overwrite log directory if it is not on dali and you are running on dali.
+    log = overwrite_dali_job_log(log, partition)
+
+    # temporary dirty fix. will remove these 3 from xenon1t soon.
+    if partition == 'xenon1t':
+        if exclude_nodes is None:
+            exclude_nodes = 'dali0[28-30]'
+        else:
+            exclude_nodes += ',dali028,dali029,dali030'
 
     if container:
         # need to wrap job into another executable
-        jobstring = singularity_wrap(jobstring, container, bind)
+        jobstring = singularity_wrap(jobstring, container, bind, partition)
         jobstring = 'unset X509_CERT_DIR CUTAX_LOCATION\n' + 'module load singularity\n' + jobstring
 
     if not hours is None:
