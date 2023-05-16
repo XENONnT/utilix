@@ -3,7 +3,7 @@
 
 ``utilix`` is a utility package for XENON software, mainly relating to analysis. It currently has two main features: (1) a general XENON configuration framework and (2) easy access to the runsDB by wrapping python calls to a RESTful API. Eventually, we would like to include easy functions for interacting with the Midway and OSG batch queues. 
 
-# Installation
+## Installation
 `git clone` this repo and:
 ```
 # at top level of utilix
