@@ -16,9 +16,9 @@ This tool expects a configuration file given by the environment variable `XENON_
 environment variables can be used in the form `$HOME`. Example:
 
     [RunDB]
-    rundb_api_url = [ask Evan]
-    rundb_api_user = [ask Evan]
-    rundb_api_password = [ask Evan]
+    rundb_api_url = [ask teamA]
+    rundb_api_user = [ask teamA]
+    rundb_api_password = [ask teamA]
 
 
 The idea is that analysts could use this single config for multiple purposes/analyses.
@@ -54,7 +54,7 @@ The goal of utilix is to make access to the runDB trivial. If using the runDB AP
     
 This instantiates the RunDB class, allowing for easy queries. Below we go through some examples of the type of queries currently supported by the runDB API wrapper in utilix. 
 
-**If there is functionality missing that you think would be useful, please contact Evan or make a new issue (or even better, a pull request).**
+**If there is functionality missing that you think would be useful, please contact teamA or make a new issue (or even better, a pull request).**
 
 
 
