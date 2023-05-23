@@ -231,8 +231,6 @@ def submit_job(jobstring,
     if process.returncode == 0:
         # Extract the job ID from the output
         job_id = output.decode().strip().split()[-1]
-        # Store the job ID in the list
-        submitted_jobs.append(job_id)
     else:
         job_id = None
         # Handle the case where the job submission failed
