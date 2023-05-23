@@ -97,6 +97,7 @@ rm {exec_file}
     return new_job_string
 
 
+
 def submit_job(jobstring,
                log='job.log',
                partition='xenon1t',
@@ -112,6 +113,7 @@ def submit_job(jobstring,
                hours=None,
                node=None,
                exclude_nodes=None,
+               dependency=None,
                **kwargs
                ):
     """
@@ -143,6 +145,7 @@ def submit_job(jobstring,
     :param hours: max hours of a job
     :param node: define a certain node to submit your job should be submitted to
     :param exclude_nodes: define a list of nodes which should be excluded from submission
+    :param dependency: provide list of job ids to wait for before running this job
     :param kwargs: are ignored
     :return: None
     """
@@ -187,6 +190,15 @@ def submit_job(jobstring,
     else:
         exclude_nodes = ''
 
+    if not dependency is None:
+        job_ids = ":".join(dependency)
+        dependency = " --dependency=afterok:"+job_ids
+        print(dependency)
+    else:
+        dependency = ''
+
+
+
     sbatch_script = sbatch_template.format(jobname=jobname, log=log, qos=qos, partition=partition,
                                            account=account, job=jobstring, mem_per_cpu=mem_per_cpu,
                                            cpus_per_task=cpus_per_task, hours=hours, node=node,
@@ -206,14 +218,30 @@ def submit_job(jobstring,
     with open(sbatch_file, 'w') as f:
         f.write(sbatch_script)
 
-    command = "sbatch %s" % sbatch_file
+
+    command = "sbatch%s %s" % (dependency, sbatch_file)
     if not sbatch_file:
         print("Executing: %s" % command)
-    subprocess.Popen(shlex.split(command)).communicate()
 
+    process = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, error = process.communicate()
+ 
+
+    # Check if the job submission was successful
+    if process.returncode == 0:
+        # Extract the job ID from the output
+        job_id = output.decode().strip().split()[-1]
+        # Store the job ID in the list
+        submitted_jobs.append(job_id)
+    else:
+        job_id = None
+        # Handle the case where the job submission failed
+        print("Job submission failed:", error.decode())
+        
     if remove_file:
         os.remove(sbatch_file)
 
+    return job_id
 
 def count_jobs(string=''):
     username = os.environ.get("USER")
