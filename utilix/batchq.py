@@ -219,7 +219,7 @@ def submit_job(jobstring,
         f.write(sbatch_script)
 
 
-    command = "sbatch%s %s" % (dependency, sbatch_file)
+    command = "sbatch %s %s" % (dependency, sbatch_file)
     if not sbatch_file:
         print("Executing: %s" % command)
 
