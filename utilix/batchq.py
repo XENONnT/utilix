@@ -192,7 +192,7 @@ def submit_job(jobstring,
 
     if not dependency is None:
         job_ids = ":".join(dependency)
-        dependency = " --dependency=afterok:"+job_ids
+        dependency = "--dependency=afterok:"+job_ids
         print(dependency)
     else:
         dependency = ''
