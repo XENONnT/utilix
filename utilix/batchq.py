@@ -46,7 +46,7 @@ def overwrite_dali_bind(bind, partition):
                 '/dali/lgrandi/xenonnt/xenon.config:/project2/lgrandi/xenonnt/xenon.config', 
                 '/dali/lgrandi/grid_proxy/xenon_service_proxy:/project2/lgrandi/grid_proxy/xenon_service_proxy'
                 ]
-        print("You are using dali parition, and your bind has been fixed to %s"%(bind))
+        # print("You are using dali parition, and your bind has been fixed to %s"%(bind))
     return bind
 
 
@@ -91,7 +91,12 @@ def singularity_wrap(jobstring, image, bind, partition):
     bind_string = " ".join([f"--bind {b}" for b in bind])
     image = os.path.join(SINGULARITY_DIR[partition], image)
     new_job_string = f"""singularity exec {bind_string} {image} {exec_file}
+exit_code=$?
 rm {exec_file}
+if [ $exit_code -ne 0 ]; then
+    echo "Python script failed with exit code $exit_code"
+    exit $exit_code
+fi
 """
     os.close(file_descriptor)
     return new_job_string
@@ -192,8 +197,7 @@ def submit_job(jobstring,
 
     if not dependency is None:
         job_ids = ":".join(dependency)
-        dependency = "--dependency=afterok:"+job_ids
-        print(dependency)
+        dependency = "--dependency=afterok:"+job_ids+" --kill-on-invalid-dep=yes"
     else:
         dependency = ''
 
@@ -217,7 +221,6 @@ def submit_job(jobstring,
 
     with open(sbatch_file, 'w') as f:
         f.write(sbatch_script)
-
 
     command = "sbatch %s %s" % (dependency, sbatch_file)
     if not sbatch_file:
