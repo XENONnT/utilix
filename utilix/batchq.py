@@ -196,8 +196,17 @@ def submit_job(jobstring,
         exclude_nodes = ''
 
     if not dependency is None:
-        job_ids = ":".join(dependency)
+        if isinstance(dependency, list):
+            # Handle list of strings
+            job_ids = ":".join(dependency)
+        elif isinstance(dependency, str):
+            # Handle single string
+            job_ids = dependency
+        else:
+            raise ValueError(f'dependency should be list or str but given {type(dependency)}')
+        
         dependency = "--dependency=afterok:"+job_ids+" --kill-on-invalid-dep=yes"
+    
     else:
         dependency = ''
 
