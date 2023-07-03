@@ -163,13 +163,6 @@ def submit_job(jobstring,
     # overwrite log directory if it is not on dali and you are running on dali.
     log = overwrite_dali_job_log(log, partition)
 
-    # temporary dirty fix. will remove these 3 from xenon1t soon.
-    if partition == 'xenon1t':
-        if exclude_nodes is None:
-            exclude_nodes = 'dali0[28-30]'
-        else:
-            exclude_nodes += ',dali028,dali029,dali030'
-
     if container:
         # need to wrap job into another executable
         jobstring = singularity_wrap(jobstring, container, bind, partition)
