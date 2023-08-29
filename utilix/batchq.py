@@ -30,9 +30,13 @@ SINGULARITY_DIR = {
     'kicp': '/project2/lgrandi/xenonnt/singularity-images',
 }
 
+SCRATCH_DIR = os.environ.get('SCRATCH')
+if len(SCRATCH_DIR.split('/'))==3 and SCRATCH_DIR.split('/')[-1]=='midway3':
+    SCRATCH_DIR += '/%s'%(os.getlogin())
+
 TMPDIR = {
     'dali': os.path.expanduser('/dali/lgrandi/%s/tmp'%(getpass.getuser())),
-    'lgrandi': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
+    'lgrandi': os.path.join(SCRATCH_DIR, 'tmp'),
     'xenon1t': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
     'broadwl': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
     'kicp': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
