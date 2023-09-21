@@ -32,7 +32,7 @@ SINGULARITY_DIR = {
 
 SCRATCH_DIR = os.environ.get('SCRATCH')
 if len(SCRATCH_DIR.split('/'))==3 and SCRATCH_DIR.split('/')[-1]=='midway3':
-    SCRATCH_DIR += '/%s'%(os.getlogin())
+    SCRATCH_DIR += '/%s'%(os.environ['USER'])
 
 TMPDIR = {
     'dali': os.path.expanduser('/dali/lgrandi/%s/tmp'%(getpass.getuser())),
