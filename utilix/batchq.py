@@ -28,6 +28,7 @@ SINGULARITY_DIR = {
     'xenon1t': '/project2/lgrandi/xenonnt/singularity-images',
     'broadwl': '/project2/lgrandi/xenonnt/singularity-images',
     'kicp': '/project2/lgrandi/xenonnt/singularity-images',
+    'caslake': '/project2/lgrandi/xenonnt/singularity-images',
 }
 
 SCRATCH_DIR = os.environ.get('SCRATCH')
@@ -40,6 +41,7 @@ TMPDIR = {
     'xenon1t': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
     'broadwl': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
     'kicp': os.path.join(os.environ.get('SCRATCH', '.'), 'tmp'),
+    'caslake': os.path.join(SCRATCH_DIR, 'tmp'),
 }
 
 
