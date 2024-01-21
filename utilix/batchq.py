@@ -170,10 +170,14 @@ def submit_job(jobstring,
         # need to wrap job into another executable
         jobstring = singularity_wrap(jobstring, container, bind, partition)
 
-        # if you have exported INSTALL_CUTAX to be 1, then you do NOT need to unset it
-        if os.environ.get('INSTALL_CUTAX') != '1':
+        # if you have exported INSTALL_CUTAX to be 1, then you do NOT need to unset CUTAX_LOCATION
+        if os.environ.get('INSTALL_CUTAX') == '1':
+            print("You have exported INSTALL_CUTAX to be 1, so I will unset it for you")
+            print("Your CUTAX_LOCATION is %s"%(os.environ.get('CUTAX_LOCATION')))
             jobstring = 'unset X509_CERT_DIR\n' + 'module load singularity\n' + jobstring
         else:
+            print("You have NOT exported INSTALL_CUTAX to be 1, so I will unset CUTAX_LOCATION for you")
+            print("Your CUTAX_LOCATION is %s"%(os.environ.get('CUTAX_LOCATION')))
             jobstring = 'unset X509_CERT_DIR CUTAX_LOCATION\n' + 'module load singularity\n' + jobstring
 
     if not hours is None:
