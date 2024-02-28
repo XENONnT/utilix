@@ -58,6 +58,24 @@ def _make_executable(path: str) -> None:
     os.chmod(path, mode)
 
 
+def _get_qos_list() -> list[str]:
+    """
+    Get the list of available qos.
+
+    Returns:
+        list[str]: The list of available qos.
+    """
+    cmd = "sacctmgr show qos format=name -p"
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True, shell=True)
+        qos_list = result.stdout.strip().split("\n")
+        qos_list = [qos[:-1] for qos in qos_list]
+        return qos_list
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while executing sacctmgr: {e}")
+        return []
+
+
 class JobSubmission(BaseModel):
     jobstring: str = Field(..., description="The command to execute")
     log: str = Field("job.log", description="Where to store the log file of the job")
@@ -119,6 +137,16 @@ class JobSubmission(BaseModel):
                 values["log"] = new_log_path
                 print("Your log is relocated at: %s" % (new_log_path))
                 logger.warning(f"Log path is overwritten to {new_log_path}")
+        return v
+
+    @validator("qos", pre=True, always=True)
+    def check_qos(cls, v):
+        qos_list = _get_qos_list()
+        if v not in qos_list:
+            logger.warning(
+                f'QOS {v} is not in the list of available qos: {qos_list}, using "normal"'
+            )
+            return "normal"
         return v
 
     @validator("hours")
@@ -186,9 +214,9 @@ class JobSubmission(BaseModel):
         slurm_kwargs = {
             "job_name": self.jobname,
             "output": self.log,
+            "qos": self.qos,
             "error": self.log,
             "account": self.account,
-            "qos": self.qos,
             "partition": self.partition,
             "mem_per_cpu": self.mem_per_cpu,
             "cpus_per_task": self.cpus_per_task,
@@ -220,15 +248,14 @@ class JobSubmission(BaseModel):
         print(f"Your log is located at: {self.log}")
 
         # Handle dry run scenario
+        print(f"Generated slurm script:\n{slurm.script}")
         if self.dry_run:
-            print(slurm)
             return
-
         # Submit the job
         slurm.sbatch()
 
 
-def submit_jobs(**kwargs):
+def submit_job(**kwargs):
     """
     Adapter to old function name.
     You should use JobSubmission to get modern code editor support.
