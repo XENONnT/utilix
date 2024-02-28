@@ -165,6 +165,7 @@ class JobSubmission(BaseModel):
     def check_container_format(cls, v):
         if not v.endswith(".simg"):
             raise ValueError("Container must end with .simg")
+        return v
 
     def __init__(self, **data):
         super().__init__(**data)
