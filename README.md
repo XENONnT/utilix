@@ -196,7 +196,7 @@ The script will open a web-browser if possible, and also print out the URL you n
 
 ## Batch queue submission
 
-### Class `JobSubmission`
+### Class `JobSubmission` (Since v0.8.0)
 
 The JobSubmission class is designed to simplify the process of creating and submitting jobs to a computational cluster. This class encapsulates all the necessary details required to submit a job, such as the command to execute, job logging, partition selection, and resource allocation. It's built to be flexible and easy to use, catering to a variety of job submission needs.
 
