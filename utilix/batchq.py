@@ -239,9 +239,7 @@ class JobSubmission(BaseModel):
 
         # Process the jobstring with the container if specified
         if self.container is not None:
-            self.jobstring = self.__singularity_wrap(
-                self.jobstring, self.container, self.bind, self.partition
-            )
+            self.jobstring = self.__singularity_wrap()
         print(f"No container specified, running job as is")
 
         # Add the job command
