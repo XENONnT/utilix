@@ -260,7 +260,7 @@ class JobSubmission(BaseModel):
         slurm.sbatch()
 
 
-def submit_job(**kwargs):
+def submit_job(*args, **kwargs):
     """
     Adapter to old function name.
     You should use JobSubmission to get modern code editor support.
@@ -271,7 +271,7 @@ def submit_job(**kwargs):
     logger.warning(
         "Using legacy function name, please use JobSubmission to get modern code editor support"
     )
-    job = JobSubmission(**kwargs)
+    job = JobSubmission(*args, **kwargs)
     job.submit()
 
 
