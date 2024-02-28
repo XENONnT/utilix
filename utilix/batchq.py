@@ -194,7 +194,8 @@ class JobSubmission(BaseModel):
         if not os.path.exists(image):
             raise FileNotFoundError(f"Singularity image {image} does not exist")
         new_job_string = (
-            f"unset X509_CERT_DIR CUTAX_LOCATION\n"
+            f"unset X509_CERT_DIR\n"
+            f'if [ "$INSTALL_CUTAX" == "1" ]; then unset CUTAX_LOCATION; fi\n'
             f"module load singularity\n"
             f"singularity exec {bind_string} {image} {exec_file}\n"
             f"exit_code=$?\n"
