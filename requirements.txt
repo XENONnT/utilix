@@ -3,5 +3,5 @@ requests
 tqdm
 pandas
 commentjson
-simiple_slurm
+simple_slurm
 pydantic
