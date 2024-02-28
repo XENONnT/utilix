@@ -248,7 +248,7 @@ class JobSubmission(BaseModel):
         print(f"Your log is located at: {self.log}")
 
         # Handle dry run scenario
-        print(f"Generated slurm script:\n{slurm.script}")
+        print(f"Generated slurm script:\n{slurm.script()}")
         if self.dry_run:
             return
         # Submit the job
