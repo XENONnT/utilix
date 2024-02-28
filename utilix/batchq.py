@@ -105,6 +105,7 @@ class JobSubmission(BaseModel):
     dependency: str = Field(
         None, description="Provide list of job ids to wait for before running this job"
     )
+    verbose: bool = Field(False, description="Print the sbatch command before submitting")
 
     @validator("bind", pre=True, each_item=True)
     def check_bind(cls, v):
@@ -240,7 +241,8 @@ class JobSubmission(BaseModel):
         # Process the jobstring with the container if specified
         if self.container is not None:
             self.jobstring = self.__singularity_wrap()
-        print(f"No container specified, running job as is")
+        elif self.verbose:
+            print(f"No container specified, running job as is")
 
         # Add the job command
         slurm.add_cmd(self.jobstring)
@@ -248,7 +250,9 @@ class JobSubmission(BaseModel):
         print(f"Your log is located at: {self.log}")
 
         # Handle dry run scenario
-        print(f"Generated slurm script:\n{slurm.script()}")
+        if self.verbose or self.dry_run:
+            print(f"Generated slurm script:\n{slurm.script()}")
+
         if self.dry_run:
             return
         # Submit the job
