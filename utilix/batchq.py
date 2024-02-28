@@ -3,7 +3,7 @@ import os
 import subprocess
 import re
 import tempfile
-from typing import Literal
+from typing import Literal, Optional
 from pydantic import BaseModel, Field, validator
 from simple_slurm import Slurm
 from utilix import logger
@@ -85,6 +85,7 @@ class JobSubmission(BaseModel):
     qos: str = Field("xenon1t", description="QOS to submit the job to")
     account: str = Field("pi-lgrandi", description="Account to submit the job to")
     jobname: str = Field("somejob", description="How to name this job")
+    sbatch_file: Optional[str] = Field(None, description="Deprecated")
     dry_run: bool = Field(
         False, description="Only print how the job looks like, without submitting"
     )
@@ -97,12 +98,12 @@ class JobSubmission(BaseModel):
         description="Paths to add to the container. Immutable when specifying dali as partition",
     )
     cpus_per_task: int = Field(1, description="CPUs requested for job")
-    hours: float = Field(None, description="Max hours of a job")
-    node: str = Field(None, description="Define a certain node to submit your job")
-    exclude_nodes: str = Field(
+    hours: Optional[float] = Field(None, description="Max hours of a job")
+    node: Optional[str] = Field(None, description="Define a certain node to submit your job")
+    exclude_nodes: Optional[str] = Field(
         None, description="Define a list of nodes which should be excluded from submission"
     )
-    dependency: str = Field(
+    dependency: Optional[str] = Field(
         None, description="Provide list of job ids to wait for before running this job"
     )
     verbose: bool = Field(False, description="Print the sbatch command before submitting")
@@ -166,6 +167,12 @@ class JobSubmission(BaseModel):
     def check_container_format(cls, v):
         if not v.endswith(".simg"):
             raise ValueError("Container must end with .simg")
+        return v
+
+    @validator("sbatch_file")
+    def check_sbatch_file(cls, v):
+        if v is not None:
+            logger.warning("sbatch_file is deprecated")
         return v
 
     def __init__(self, **data):
