@@ -241,6 +241,7 @@ class JobSubmission(BaseModel):
             self.jobstring = self.__singularity_wrap(
                 self.jobstring, self.container, self.bind, self.partition
             )
+        print(f"No container specified, running job as is")
 
         # Add the job command
         slurm.add_cmd(self.jobstring)
