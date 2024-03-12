@@ -128,12 +128,6 @@ class JobSubmission(BaseModel):
         return v
 
     @validator("partition", pre=True, always=True)
-    def check_partition(cls, v):
-        if v not in PARTITIONS:
-            raise ValueError(f"Partition must be one of {PARTITIONS}")
-        return v
-
-    @validator("partition", pre=True, always=True)
     def overwrite_for_dali(cls, v, values):
         # You can access other fields in the model using the "values" dict
         if v == "dali":
