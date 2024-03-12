@@ -170,6 +170,11 @@ class JobSubmission(BaseModel):
     def check_container_format(cls, v):
         if not v.endswith(".simg"):
             raise ValueError("Container must end with .simg")
+        # Check if the container exists
+        if not os.path.exists(os.path.join(SINGULARITY_DIR[cls.partition], v)):
+            raise FileNotFoundError(
+                f"Singularity image {v} does not exist in {SINGULARITY_DIR[cls.partition]}"
+            )
         return v
 
     @validator("sbatch_file")
