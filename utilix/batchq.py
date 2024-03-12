@@ -118,7 +118,7 @@ class JobSubmission(BaseModel):
     verbose: bool = Field(False, description="Print the sbatch command before submitting")
 
     @validator("bind", pre=True, each_item=True)
-    def check_bind(cls, v):
+    def check_bind(cls, v) -> str:
         if not isinstance(v, str):
             raise ValueError("Each bind must be a string")
 
@@ -128,7 +128,7 @@ class JobSubmission(BaseModel):
         return v
 
     @validator("partition", pre=True, always=True)
-    def overwrite_for_dali(cls, v, values):
+    def overwrite_for_dali(cls, v, values) -> str:
         # You can access other fields in the model using the "values" dict
         if v == "dali":
             bind = DALI_BIND
@@ -145,7 +145,7 @@ class JobSubmission(BaseModel):
         return v
 
     @validator("qos", pre=True, always=True)
-    def check_qos(cls, v):
+    def check_qos(cls, v) -> str:
         qos_list = _get_qos_list()
         if v not in qos_list:
             logger.warning(
@@ -155,19 +155,19 @@ class JobSubmission(BaseModel):
         return v
 
     @validator("hours")
-    def check_hours_value(cls, v):
+    def check_hours_value(cls, v) -> Optional[float]:
         if v is not None and (v <= 0 or v > 72):
             raise ValueError("Hours must be between 0 and 72")
         return v
 
     @validator("node", "exclude_nodes", "dependency")
-    def check_node_format(cls, v):
+    def check_node_format(cls, v) -> Optional[str]:
         if v is not None and not re.match(r"^[a-zA-Z0-9,\[\]-]+$", v):
             raise ValueError("Invalid format for node/exclude_nodes/dependency")
         return v
 
     @validator("container")
-    def check_container_format(cls, v):
+    def check_container_format(cls, v) -> str:
         if not v.endswith(".simg"):
             raise ValueError("Container must end with .simg")
         # Check if the container exists
@@ -178,7 +178,7 @@ class JobSubmission(BaseModel):
         return v
 
     @validator("sbatch_file")
-    def check_sbatch_file(cls, v):
+    def check_sbatch_file(cls, v) -> Optional[str]:
         if v is not None:
             logger.warning("sbatch_file is deprecated")
         return v
@@ -302,6 +302,6 @@ def count_jobs(string="") -> int:
     Returns:
         int: Number of jobs in the queue.
     """
-    output = subprocess.check_output(["squeue", "-u", USER]).decode("utf-8")
+    output = subprocess.check_output(["squeue", "-u", str(USER)]).decode("utf-8")
     lines = output.split("\n")
     return len([job for job in lines if string in job])
