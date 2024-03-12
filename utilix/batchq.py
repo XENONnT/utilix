@@ -187,7 +187,7 @@ class JobSubmission(BaseModel):
         super().__init__(**data)
         os.makedirs(TMPDIR[self.partition], exist_ok=True)
 
-    def __singularity_wrap(self) -> str:
+    def _create_singularity_jobstring(self) -> str:
         """
         Wrap the jobstring with the singularity command.
 
@@ -261,7 +261,7 @@ class JobSubmission(BaseModel):
 
         # Process the jobstring with the container if specified
         if self.container is not None:
-            self.jobstring = self.__singularity_wrap()
+            self.jobstring = self._create_singularity_jobstring()
         elif self.verbose:
             print(f"No container specified, running job as is")
 
