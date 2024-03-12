@@ -183,9 +183,6 @@ class JobSubmission(BaseModel):
             logger.warning("sbatch_file is deprecated")
         return v
 
-    def __init__(self, **data):
-        super().__init__(**data)
-
     def _create_singularity_jobstring(self) -> str:
         """
         Wrap the jobstring with the singularity command.
