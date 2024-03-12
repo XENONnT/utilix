@@ -231,7 +231,7 @@ class JobSubmission(BaseModel):
         """
         os.makedirs(TMPDIR[self.partition], exist_ok=True)
         # Initialize a dictionary with mandatory parameters
-        slurm_kwargs = {
+        slurm_params = {
             "job_name": self.jobname,
             "output": self.log,
             "qos": self.qos,
@@ -244,17 +244,17 @@ class JobSubmission(BaseModel):
 
         # Conditionally add optional parameters if they are not None
         if self.hours is not None:
-            slurm_kwargs["time"] = datetime.timedelta(hours=self.hours)
+            slurm_params["time"] = datetime.timedelta(hours=self.hours)
         if self.node is not None:
-            slurm_kwargs["nodelist"] = self.node
+            slurm_params["nodelist"] = self.node
         if self.exclude_nodes is not None:
-            slurm_kwargs["exclude"] = self.exclude_nodes
+            slurm_params["exclude"] = self.exclude_nodes
         if self.dependency is not None:
-            slurm_kwargs["dependency"] = {"afterok": self.dependency}
-            slurm_kwargs["kill_on_invalid"] = "yes"
+            slurm_params["dependency"] = {"afterok": self.dependency}
+            slurm_params["kill_on_invalid"] = "yes"
 
         # Create the Slurm instance with the conditional arguments
-        slurm = Slurm(**slurm_kwargs)
+        slurm = Slurm(**slurm_params)
 
         # Process the jobstring with the container if specified
         if self.container is not None:
