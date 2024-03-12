@@ -185,7 +185,6 @@ class JobSubmission(BaseModel):
 
     def __init__(self, **data):
         super().__init__(**data)
-        os.makedirs(TMPDIR[self.partition], exist_ok=True)
 
     def _create_singularity_jobstring(self) -> str:
         """
@@ -233,6 +232,7 @@ class JobSubmission(BaseModel):
         """
         Submit the job to the SLURM queue.
         """
+        os.makedirs(TMPDIR[self.partition], exist_ok=True)
         # Initialize a dictionary with mandatory parameters
         slurm_kwargs = {
             "job_name": self.jobname,
