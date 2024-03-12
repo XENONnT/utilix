@@ -9,7 +9,16 @@ from simple_slurm import Slurm
 from utilix import logger
 
 USER = os.environ.get("USER")
+if USER is None:
+    raise ValueError("USER environment variable is not set")
+
 SCRATCH_DIR = os.environ.get("SCRATCH", ".")
+# SCRATCH_DIR must have write permission
+if not os.access(SCRATCH_DIR, os.W_OK):
+    raise ValueError(
+        f"SCRATCH_DIR {SCRATCH_DIR} does not have write permission. You may need to set SCRATCH_DIR manually in your .bashrc or .bash_profile."
+    )
+
 PARTITIONS = ["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake"]
 TMPDIR = {
     "dali": os.path.expanduser(f"/dali/lgrandi/{USER}/tmp"),
@@ -200,6 +209,11 @@ class JobSubmission(BaseModel):
         image = os.path.join(SINGULARITY_DIR[self.partition], self.container)
         if not os.path.exists(image):
             raise FileNotFoundError(f"Singularity image {image} does not exist")
+        # Warn user if CUTAX_LOCATION is unset due to INSTALL_CUTAX
+        if os.environ.get("INSTALL_CUTAX") == "1":
+            logger.warning(
+                "INSTALL_CUTAX is set to 1, ignoring CUTAX_LOCATION and unsetting it for the job."
+            )
         new_job_string = (
             f"unset X509_CERT_DIR\n"
             f'if [ "$INSTALL_CUTAX" == "1" ]; then unset CUTAX_LOCATION; fi\n'
@@ -282,19 +296,16 @@ def submit_job(*args, **kwargs):
     job.submit()
 
 
-def count_jobs() -> int:
+def count_jobs(string="") -> int:
     """
     Count the number of jobs in the queue.
 
+    Args:
+        string (str, optional): String to search for in the job names. Defaults to "".
+
     Returns:
-        int: The number of jobs in the queue.
+        int: Number of jobs in the queue.
     """
-    cmd = f"squeue -u {USER}"
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True, shell=True)
-        lines = result.stdout.strip().split("\n")
-        # Subtract 1 for the header; if no jobs, ensure it returns 0 instead of -1
-        return max(len(lines) - 1, 0)
-    except subprocess.CalledProcessError as e:
-        print(f"An error occurred while executing squeue: {e}")
-        return 0
+    output = subprocess.check_output(["squeue", "-u", USER]).decode("utf-8")
+    lines = output.split("\n")
+    return len([job for job in lines if string in job])
