@@ -194,7 +194,73 @@ Example:
 The script will open a web-browser if possible, and also print out the URL you need to visit to authorize the script to operate on your behalf. After you login using github and authorize the request, the script will get a token and save it in memory for the next requests.
 
 
+## Batch queue submission
 
+### Class `JobSubmission` (Since v0.8.0)
+
+The JobSubmission class is designed to simplify the process of creating and submitting jobs to a computational cluster. This class encapsulates all the necessary details required to submit a job, such as the command to execute, job logging, partition selection, and resource allocation. It's built to be flexible and easy to use, catering to a variety of job submission needs.
+
+- `jobstring`: The command that will be executed by the job. It is mandatory.
+- `log`: The filepath where the job's log file will be stored. Default is "job.log".
+- `partition`: Specifies the partition to submit the job to. Supported partitions are dali, lgrandi, xenon1t, broadwl, kicp, caslake. Default is xenon1t.
+- `qos`: Quality of Service to submit the job to. Default is xenon1t.
+- `account`: The account under which the job is submitted. Default is pi-lgrandi.
+- `jobname`: The name of the job. Default is somejob.
+- `sbatch_file`: Deprecated.
+- `dry_run`: If set to True, the job submission will only be simulated. Default is False.
+- `mem_per_cpu`: Memory (in MB) requested per CPU. Default is 1000MB.
+- `container`: The name of the container to activate for this job. Default is xenonnt-development.simg.
+- `bind`: A list of paths to add to the container. It's immutable for the dali partition.
+- `cpus_per_task`: Number of CPUs requested for the job. Default is 1.
+- `hours`: Maximum duration of the job in hours. Optional.
+- `node`: Specific node to submit your job to. Optional.
+- `exclude_nodes`: List of nodes to be excluded from submission. Optional.
+- `dependency`: List of job IDs that must complete before this job begins. Optional.
+- `verbose`: If True, prints the sbatch command before submitting. Default is False.
+
+```python
+from utilix.batchq import JobSubmission
+
+job = JobSubmission(
+    jobstring="python my_script.py --run_list 123456 234567",
+    log="my_job.log",
+    partition="xenon1t",
+    qos="xenon1t",
+    jobname="my_analysis_job",
+    dry_run=False,
+    mem_per_cpu=2000,
+    container="xenonnt-2024.01.1.simg",
+    cpus_per_task=4,
+    hours=12,
+    verbose=True
+)
+
+job.submit()
+```
+
+### Method `submit_job` (Legacy)
+
+If you have a script written with `utilix<0.8.0`, you probably used the `submit_job` method. This method is now deprecated but still available for backward compatibility. It's recommended to use the `JobSubmission` class instead.
+
+The example below is equivalent to the previous one:
+
+```python
+from utilix.batchq import submit_job
+
+submit_job(
+    jobstring="python my_script.py --run_list 123456 234567",
+    log="my_job.log",
+    partition="xenon1t",
+    qos="xenon1t",
+    jobname="my_analysis_job",
+    dry_run=False,
+    mem_per_cpu=2000,
+    container="xenonnt-2024.01.1.simg",
+    cpus_per_task=4,
+    hours=12,
+    verbose=True
+)
+```
 
 
 ## TODO
