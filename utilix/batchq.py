@@ -119,11 +119,8 @@ class JobSubmission(BaseModel):
 
     @validator("bind", pre=True, each_item=True)
     def check_bind(cls, v) -> str:
-        if not isinstance(v, str):
-            raise ValueError("Each bind must be a string")
-
         if not os.path.exists(v):
-            raise FileNotFoundError(f"Bind path {v} does not exist")
+            logger.warning(f"Bind path {v} does not exist")
 
         return v
 
