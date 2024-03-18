@@ -3,7 +3,7 @@ import os
 import subprocess
 import re
 import tempfile
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, validator
 from simple_slurm import Slurm
 from utilix import logger
@@ -102,7 +102,7 @@ class JobSubmission(BaseModel):
     container: str = Field(
         "xenonnt-development.simg", description="Name of the container to activate"
     )
-    bind: list[str] = Field(
+    bind: List[str] = Field(
         default_factory=lambda: DEFAULT_BIND,
         description="Paths to add to the container. Immutable when specifying dali as partition",
     )
@@ -119,11 +119,8 @@ class JobSubmission(BaseModel):
 
     @validator("bind", pre=True, each_item=True)
     def check_bind(cls, v) -> str:
-        if not isinstance(v, str):
-            raise ValueError("Each bind must be a string")
-
         if not os.path.exists(v):
-            raise FileNotFoundError(f"Bind path {v} does not exist")
+            logger.warning(f"Bind path {v} does not exist")
 
         return v
 
@@ -278,18 +275,69 @@ class JobSubmission(BaseModel):
         slurm.sbatch()
 
 
-def submit_job(*args, **kwargs):
+def submit_job(
+    jobstring: str,
+    log: str = "job.log",
+    partition: Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake"] = "xenon1t",
+    qos: str = "xenon1t",
+    account: str = "pi-lgrandi",
+    jobname: str = "somejob",
+    sbatch_file: Optional[str] = None,
+    dry_run: bool = False,
+    mem_per_cpu: int = 1000,
+    container: str = "xenonnt-development.simg",
+    bind: list[str] = DEFAULT_BIND,
+    cpus_per_task: int = 1,
+    hours: Optional[float] = None,
+    node: Optional[str] = None,
+    exclude_nodes: Optional[str] = None,
+    dependency: Optional[str] = None,
+    verbose: bool = False,
+):
     """
-    Adapter to old function name.
-    You should use JobSubmission to get modern code editor support.
+    Submit a job to the SLURM queue.
 
     Args:
-        **kwargs: Keyword arguments to pass to JobSubmission
+        jobstring (str): The command to execute.
+        log (str): Where to store the log file of the job. Default is "job.log".
+        partition (Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake"]): Partition to submit the job to. Default is "xenon1t".
+        qos (str): QOS to submit the job to. Default is "xenon1t".
+        account (str): Account to submit the job to. Default is "pi-lgrandi".
+        jobname (str): How to name this job. Default is "somejob".
+        sbatch_file (Optional[str]): Deprecated. Default is None.
+        dry_run (bool): Only print how the job looks like, without submitting. Default is False.
+        mem_per_cpu (int): MB requested for job. Default is 1000.
+        container (str): Name of the container to activate. Default is "xenonnt-development.simg".
+        bind (list[str]): Paths to add to the container. Immutable when specifying dali as partition. Default is DEFAULT_BIND.
+        cpus_per_task (int): CPUs requested for job. Default is 1.
+        hours (Optional[float]): Max hours of a job. Default is None.
+        node (Optional[str]): Define a certain node to submit your job. Default is None.
+        exclude_nodes (Optional[str]): Define a list of nodes which should be excluded from submission. Default is None.
+        dependency (Optional[str]): Provide list of job ids to wait for before running this job. Default is None.
+        verbose (bool): Print the sbatch command before submitting. Default is False.
     """
     logger.warning(
         "Using legacy function name, please use JobSubmission to get modern code editor support"
     )
-    job = JobSubmission(*args, **kwargs)
+    job = JobSubmission(
+        jobstring=jobstring,
+        log=log,
+        partition=partition,
+        qos=qos,
+        account=account,
+        jobname=jobname,
+        sbatch_file=sbatch_file,
+        dry_run=dry_run,
+        mem_per_cpu=mem_per_cpu,
+        container=container,
+        bind=bind,
+        cpus_per_task=cpus_per_task,
+        hours=hours,
+        node=node,
+        exclude_nodes=exclude_nodes,
+        dependency=dependency,
+        verbose=verbose,
+    )
     job.submit()
 
 
