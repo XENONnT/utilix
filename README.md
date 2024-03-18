@@ -10,6 +10,8 @@
 pip install -e ./ --user
 ```
 
+Note: you may need to add `--ignore-installed` at the end of `pip install` if it tries to uninstall the old package from a public path (for example, under `/cvmfs/xenon.opensciencegrid.org/releases/nT/2024.02.1/anaconda/envs/XENONnT_2024.02.1/lib/python3.9/site-packages`) which you don't have access to.
+
 ## Configuration file
 
 This tool expects a configuration file given by the environment variable `XENON_CONFIG`, defaulting to `$HOME/.xenon_config` if it is empty. Note that
