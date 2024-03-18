@@ -3,7 +3,7 @@ import os
 import subprocess
 import re
 import tempfile
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, validator
 from simple_slurm import Slurm
 from utilix import logger
@@ -102,7 +102,7 @@ class JobSubmission(BaseModel):
     container: str = Field(
         "xenonnt-development.simg", description="Name of the container to activate"
     )
-    bind: list[str] = Field(
+    bind: List[str] = Field(
         default_factory=lambda: DEFAULT_BIND,
         description="Paths to add to the container. Immutable when specifying dali as partition",
     )
