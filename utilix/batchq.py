@@ -286,7 +286,7 @@ def submit_job(
     dry_run: bool = False,
     mem_per_cpu: int = 1000,
     container: str = "xenonnt-development.simg",
-    bind: list[str] = DEFAULT_BIND,
+    bind: List[str] = DEFAULT_BIND,
     cpus_per_task: int = 1,
     hours: Optional[float] = None,
     node: Optional[str] = None,
