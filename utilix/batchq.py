@@ -67,12 +67,12 @@ def _make_executable(path: str) -> None:
     os.chmod(path, mode)
 
 
-def _get_qos_list() -> list[str]:
+def _get_qos_list() -> List[str]:
     """
     Get the list of available qos.
 
     Returns:
-        list[str]: The list of available qos.
+        List[str]: The list of available qos.
     """
     cmd = "sacctmgr show qos format=name -p"
     try:
