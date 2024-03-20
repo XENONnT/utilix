@@ -6,3 +6,4 @@ utilix.egg-info
 
 dist/
 build/
+.venv
