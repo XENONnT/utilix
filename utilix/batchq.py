@@ -334,7 +334,7 @@ class JobSubmission(BaseModel):
             print(f"An error occurred while executing nodestatus: {e}")
             return []
 
-    def submit(self):
+    def submit(self) -> None:
         """
         Submit the job to the SLURM queue.
         """
@@ -414,6 +414,7 @@ def submit_job(
 
     Args:
         jobstring (str): The command to execute.
+        exclude_lc_nodes (bool): Exclude the loosely coupled nodes. Default is True.
         log (str): Where to store the log file of the job. Default is "job.log".
         partition (Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake"]):
             Partition to submit the job to. Default is "xenon1t".
