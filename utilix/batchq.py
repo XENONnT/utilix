@@ -307,6 +307,7 @@ class JobSubmission(BaseModel):
 
 def submit_job(
     jobstring: str,
+    exclude_lc_nodes: bool = True,
     log: str = "job.log",
     partition: Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake"] = "xenon1t",
     qos: str = "xenon1t",
@@ -348,6 +349,7 @@ def submit_job(
     """
     job = JobSubmission(
         jobstring=jobstring,
+        exclude_lc_nodes=exclude_lc_nodes,
         log=log,
         partition=partition,
         qos=qos,
