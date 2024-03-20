@@ -316,9 +316,6 @@ def submit_job(
         dependency (Optional[str]): Provide list of job ids to wait for before running this job. Default is None.
         verbose (bool): Print the sbatch command before submitting. Default is False.
     """
-    logger.warning(
-        "Using legacy function name, please use JobSubmission to get modern code editor support"
-    )
     job = JobSubmission(
         jobstring=jobstring,
         log=log,
