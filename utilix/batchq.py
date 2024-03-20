@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field, validator
 from simple_slurm import Slurm  # type: ignore
 from utilix import logger
 
-USER: str | None = os.environ.get("USER")
+USER: Optional[str] = os.environ.get("USER")
 if USER is None:
     raise ValueError("USER environment variable is not set")
 
@@ -401,7 +401,7 @@ def submit_job(
     dry_run: bool = False,
     mem_per_cpu: int = 1000,
     container: str = "xenonnt-development.simg",
-    bind: List[str] | None = None,
+    bind: Optional[List[str]] = None,
     cpus_per_task: int = 1,
     hours: Optional[float] = None,
     node: Optional[str] = None,
