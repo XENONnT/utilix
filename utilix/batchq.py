@@ -7,9 +7,9 @@ import os
 import subprocess
 import re
 import tempfile
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, validator
-from simple_slurm import Slurm
+from simple_slurm import Slurm  # type: ignore
 from utilix import logger
 
 USER: str | None = os.environ.get("USER")
@@ -144,7 +144,7 @@ class JobSubmission(BaseModel):
         return v
 
     @validator("partition", pre=True, always=True)
-    def overwrite_for_dali(cls, v: str, values: dict) -> str:
+    def overwrite_for_dali(cls, v: str, values: Dict[Any, Any]) -> str:
         """
         Overwrite the partition to dali if the container is xenonnt-development.simg.
 
@@ -171,7 +171,7 @@ class JobSubmission(BaseModel):
         return v
 
     @validator("qos", pre=True, always=True)
-    def check_qos(cls, v) -> str:
+    def check_qos(cls, v: str) -> str:
         """
         Check if the qos is in the list of available qos.
 
@@ -226,7 +226,7 @@ class JobSubmission(BaseModel):
         return v
 
     @validator("container")
-    def check_container_format(cls, v: str, values: dict) -> str:
+    def check_container_format(cls, v: str, values: Dict[Any, Any]) -> str:
         """
         Check if the container ends with .simg and if it exists.
 
@@ -340,7 +340,7 @@ class JobSubmission(BaseModel):
         """
         os.makedirs(TMPDIR[self.partition], exist_ok=True)
         # Initialize a dictionary with mandatory parameters
-        slurm_params = {
+        slurm_params: Dict[str, Any] = {
             "job_name": self.jobname,
             "output": self.log,
             "qos": self.qos,
@@ -372,10 +372,7 @@ class JobSubmission(BaseModel):
         slurm = Slurm(**slurm_params)
 
         # Process the jobstring with the container if specified
-        if self.container is not None:
-            self.jobstring = self._create_singularity_jobstring()
-        elif self.verbose:
-            print("No container specified, running job as is")
+        self.jobstring = self._create_singularity_jobstring()
 
         # Add the job command
         slurm.add_cmd(self.jobstring)
@@ -465,7 +462,7 @@ def submit_job(
     job.submit()
 
 
-def count_jobs(string="") -> int:
+def count_jobs(string: str = "") -> int:
     """
     Count the number of jobs in the queue.
 
@@ -475,6 +472,6 @@ def count_jobs(string="") -> int:
     Returns:
         int: Number of jobs in the queue.
     """
-    output = subprocess.check_output(["squeue", "-u", str(USER)]).decode("utf-8")
+    output: str = subprocess.check_output(["squeue", "-u", str(USER)]).decode("utf-8")
     lines = output.split("\n")
     return len([job for job in lines if string in job])
