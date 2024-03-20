@@ -231,15 +231,15 @@ class JobSubmission(BaseModel):
         Check if the container ends with .simg and if it exists.
 
         Args:
-            v (str): _description_
-            values (_type_): _description_
+            v (str): The container to check.
+            values (Dict[Any, Any]): The values of the model.
 
         Raises:
-            ValueError: _description_
-            FileNotFoundError: _description_
+            ValueError: Container not ending with .simg
+            FileNotFoundError: Container does not exist.
 
         Returns:
-            str: _description_
+            str: The container to use.
         """
         if not v.endswith(".simg"):
             raise ValueError("Container must end with .simg")
