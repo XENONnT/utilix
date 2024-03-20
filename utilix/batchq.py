@@ -87,6 +87,7 @@ def _get_qos_list() -> List[str]:
 
 class JobSubmission(BaseModel):
     jobstring: str = Field(..., description="The command to execute")
+    exclude_lc_nodes: bool = Field(True, description="Exclude the loosely coupled nodes")
     log: str = Field("job.log", description="Where to store the log file of the job")
     partition: Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake"] = Field(
         "xenon1t", description="Partition to submit the job to"
@@ -222,6 +223,29 @@ class JobSubmission(BaseModel):
         if file_discriptor is not None:
             os.close(file_discriptor)
         return new_job_string
+    
+    def _get_lc_nodes(self) -> List[str]:
+        """
+        Get the list of 'lc' (loosely coupled) nodes in the specified partition.
+        
+        Returns:
+            List[str]: The list of 'lc' node names.
+        """
+        cmd = f"nodestatus {self.partition}"
+        try:
+            output = subprocess.check_output(cmd, universal_newlines=True, shell=True)
+            lines = output.split("\n")
+            lc_nodes = []
+            for line in lines:
+                columns = line.split()
+                if len(columns) >= 4 and "," in columns[3]:
+                    features = columns[3].split(",")
+                    if "lc" in features:
+                        lc_nodes.append(columns[0])
+            return lc_nodes
+        except subprocess.CalledProcessError as e:
+            print(f"An error occurred while executing nodestatus: {e}")
+            return []
 
     def submit(self):
         """
@@ -239,6 +263,12 @@ class JobSubmission(BaseModel):
             "mem_per_cpu": self.mem_per_cpu,
             "cpus_per_task": self.cpus_per_task,
         }
+        
+        # Exclude the loosely coupled nodes if required
+        if self.exclude_lc_nodes:
+            lc_nodes = self._get_lc_nodes()
+            if lc_nodes:
+                slurm_params["exclude"] = ",".join(lc_nodes)
 
         # Conditionally add optional parameters if they are not None
         if self.hours is not None:
