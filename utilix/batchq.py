@@ -183,10 +183,8 @@ class JobSubmission(BaseModel):
         """
         qos_list = _get_qos_list()
         if v not in qos_list:
-            logger.warning(
-                'QOS {v} is not in the list of available qos: %s, using "normal"', qos_list
-            )
-            return "normal"
+            # Raise an error if the qos is not in the list of available qos
+            raise ValueError(f"QOS {v} is not in the list of available qos: \n {qos_list}")
         return v
 
     @validator("hours")
