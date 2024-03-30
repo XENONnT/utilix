@@ -204,7 +204,7 @@ The JobSubmission class is designed to simplify the process of creating and subm
 
 - `jobstring`: The command that will be executed by the job. It is mandatory.
 - `log`: The filepath where the job's log file will be stored. Default is "job.log".
-- `partition`: Specifies the partition to submit the job to. Supported partitions are dali, lgrandi, xenon1t, broadwl, kicp, caslake. Default is xenon1t.
+- `partition`: Specifies the partition to submit the job to. Supported partitions are dali, lgrandi, xenon1t, broadwl, kicp, caslake, build. Default is xenon1t.
 - `qos`: Quality of Service to submit the job to. Default is xenon1t.
 - `account`: The account under which the job is submitted. Default is pi-lgrandi.
 - `jobname`: The name of the job. Default is somejob.
