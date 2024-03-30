@@ -24,7 +24,7 @@ if not os.access(SCRATCH_DIR, os.W_OK):
         "You may need to set SCRATCH_DIR manually in your .bashrc or .bash_profile."
     )
 
-PARTITIONS: List[str] = ["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake"]
+PARTITIONS: List[str] = ["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build"]
 TMPDIR: Dict[str, str] = {
     "dali": os.path.expanduser(f"/dali/lgrandi/{USER}/tmp"),
     "lgrandi": os.path.join(SCRATCH_DIR, "tmp"),
@@ -32,6 +32,7 @@ TMPDIR: Dict[str, str] = {
     "broadwl": os.path.join(SCRATCH_DIR, "tmp"),
     "kicp": os.path.join(SCRATCH_DIR, "tmp"),
     "caslake": os.path.join(SCRATCH_DIR, "tmp"),
+    "build": os.path.join(SCRATCH_DIR, "tmp"),
 }
 SINGULARITY_DIR: Dict[str, str] = {
     "dali": "/dali/lgrandi/xenonnt/singularity-images",
@@ -40,6 +41,7 @@ SINGULARITY_DIR: Dict[str, str] = {
     "broadwl": "/project2/lgrandi/xenonnt/singularity-images",
     "kicp": "/project2/lgrandi/xenonnt/singularity-images",
     "caslake": "/project2/lgrandi/xenonnt/singularity-images",
+    "build": "/project2/lgrandi/xenonnt/singularity-images",
 }
 DEFAULT_BIND: List[str] = [
     "/project2/lgrandi/xenonnt/dali:/dali",
@@ -98,7 +100,7 @@ class JobSubmission(BaseModel):
     jobstring: str = Field(..., description="The command to execute")
     exclude_lc_nodes: bool = Field(True, description="Exclude the loosely coupled nodes")
     log: str = Field("job.log", description="Where to store the log file of the job")
-    partition: Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake"] = Field(
+    partition: Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build"] = Field(
         "xenon1t", description="Partition to submit the job to"
     )
     qos: str = Field("xenon1t", description="QOS to submit the job to")
@@ -391,7 +393,7 @@ def submit_job(
     jobstring: str,
     exclude_lc_nodes: bool = True,
     log: str = "job.log",
-    partition: Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake"] = "xenon1t",
+    partition: Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build"] = "xenon1t",
     qos: str = "xenon1t",
     account: str = "pi-lgrandi",
     jobname: str = "somejob",
@@ -414,7 +416,7 @@ def submit_job(
         jobstring (str): The command to execute.
         exclude_lc_nodes (bool): Exclude the loosely coupled nodes. Default is True.
         log (str): Where to store the log file of the job. Default is "job.log".
-        partition (Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake"]):
+        partition (Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build"]):
             Partition to submit the job to. Default is "xenon1t".
         qos (str): QOS to submit the job to. Default is "xenon1t".
         account (str): Account to submit the job to. Default is "pi-lgrandi".
