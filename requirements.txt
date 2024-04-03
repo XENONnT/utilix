@@ -4,4 +4,4 @@ tqdm
 pandas
 commentjson
 simple_slurm
-pydantic
+pydantic>=1.10, <2.0
