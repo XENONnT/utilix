@@ -8,7 +8,7 @@ import subprocess
 import re
 import tempfile
 from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, ValidationError, root_validator
 from simple_slurm import Slurm  # type: ignore
 from utilix import logger
 
@@ -129,6 +129,18 @@ class JobSubmission(BaseModel):
     )
     verbose: bool = Field(False, description="Print the sbatch command before submitting")
 
+    # Check if there is any positional argument which is not allowed
+    def __new__(cls, *args, **kwargs):
+        if args:
+            raise ValueError(
+                "Positional arguments are not allowed. "
+                "Please use keyword arguments for all fields."
+            )
+        return super().__new__(cls)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+    
     @validator("bind", pre=True, each_item=True)
     def check_bind(cls, v: str) -> str:
         """
