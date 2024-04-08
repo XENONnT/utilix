@@ -103,7 +103,7 @@ class JobSubmission(BaseModel):
     partition: Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build"] = Field(
         "xenon1t", description="Partition to submit the job to"
     )
-    qos: str = Field("xenon1t", description="QOS to submit the job to")
+    qos: str = Field("xenon1t", description="QOS to submit the job to. Set to None if this is not applicable in your server")
     account: str = Field("pi-lgrandi", description="Account to submit the job to")
     jobname: str = Field("somejob", description="How to name this job")
     sbatch_file: Optional[str] = Field(None, description="Deprecated")
@@ -195,7 +195,12 @@ class JobSubmission(BaseModel):
         Returns:
             str: The qos to use.
         """
+        # Allow no qos, as some servers may not have this feature
+        if v is None:
+            return None
+        
         qos_list = _get_qos_list()
+        
         if v not in qos_list:
             # Raise an error if the qos is not in the list of available qos
             raise ValueError(f"QOS {v} is not in the list of available qos: \n {qos_list}")
@@ -362,6 +367,9 @@ class JobSubmission(BaseModel):
             "mem_per_cpu": self.mem_per_cpu,
             "cpus_per_task": self.cpus_per_task,
         }
+        
+        # Filter out parameters set as None
+        slurm_params = {k:v for k,v in slurm_params.items() if v is not None}
 
         # Exclude the loosely coupled nodes if required
         if self.exclude_lc_nodes:
