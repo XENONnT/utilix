@@ -64,18 +64,15 @@ DALI_BIND: List[str] = [
     "/dali/lgrandi/grid_proxy/xenon_service_proxy:/project2/lgrandi/grid_proxy/xenon_service_proxy",
 ]
 
-
 class QOSNotFoundError(Exception):
     """
     Provided qos is not found in the qos list
     """
-
-
+    
 class FormatError(Exception):
     """
     Format of file is not correct
     """
-
 
 def _make_executable(path: str) -> None:
     """
@@ -112,7 +109,6 @@ def _get_qos_list() -> List[str]:
     except subprocess.CalledProcessError as e:
         print(f"An error occurred while executing sacctmgr: {e}")
         return []
-
 
 class JobSubmission(BaseModel):
     """
