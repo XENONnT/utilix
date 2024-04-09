@@ -64,15 +64,18 @@ DALI_BIND: List[str] = [
     "/dali/lgrandi/grid_proxy/xenon_service_proxy:/project2/lgrandi/grid_proxy/xenon_service_proxy",
 ]
 
+
 class QOSNotFoundError(Exception):
     """
     Provided qos is not found in the qos list
     """
-    
+
+
 class FormatError(Exception):
     """
     Format of file is not correct
     """
+
 
 def _make_executable(path: str) -> None:
     """
@@ -110,12 +113,16 @@ def _get_qos_list() -> List[str]:
         print(f"An error occurred while executing sacctmgr: {e}")
         return []
 
+
 class JobSubmission(BaseModel):
     """
     Class to generate and submit a job to the SLURM queue.
     """
 
     jobstring: str = Field(..., description="The command to execute")
+    bypass_validation: List[str] = Field(
+        default_factory=list, description="List of parameters to bypass validation for"
+    )
     exclude_lc_nodes: bool = Field(
         True, description="Exclude the loosely coupled nodes"
     )
@@ -153,9 +160,6 @@ class JobSubmission(BaseModel):
     verbose: bool = Field(
         False, description="Print the sbatch command before submitting"
     )
-    bypass_validation: List[str] = Field(
-        default_factory=list, description="List of parameters to bypass validation for"
-    )
 
     # Check if there is any positional argument which is not allowed
     def __new__(cls, *args, **kwargs):
@@ -169,8 +173,27 @@ class JobSubmission(BaseModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    @classmethod
+    def _skip_validation(cls, field: str, values: Dict[Any, Any]) -> bool:
+        """
+        Check if a field should be validated based on the bypass_validation list.
+
+        Args:
+            field (str): The name of the field to check.
+            values (Dict[str, Any]): The values dictionary containing the bypass_validation list.
+
+        Returns:
+            bool: True if the field should be validated, False otherwise.
+        """
+        return field in values.get("bypass_validation", [])
+    
+    # validate the bypass_validation so that it can be reached in values
+    @validator("bypass_validation", pre=True, each_item=True)
+    def check_bypass_validation(cls, v: str) -> str:
+        return v
+
     @validator("bind", pre=True, each_item=True)
-    def check_bind(cls, v: str) -> str:
+    def check_bind(cls, v: str, values: Dict[Any, Any]) -> str:
         """
         Check if the bind path exists.
 
@@ -180,6 +203,9 @@ class JobSubmission(BaseModel):
         Returns:
             str: The bind path if it exists.
         """
+        if cls._skip_validation("bind", values):
+            return v
+
         if not os.path.exists(v):
             logger.warning("Bind path %s does not exist", v)
 
@@ -197,7 +223,8 @@ class JobSubmission(BaseModel):
         Returns:
             str: The partition to use.
         """
-        # You can access other fields in the model using the "values" dict
+        if cls._skip_validation("partition", values):
+            return v
         if v == "dali":
             bind = DALI_BIND
             values["bind"] = bind
@@ -213,7 +240,7 @@ class JobSubmission(BaseModel):
         return v
 
     @validator("qos", pre=True, always=True)
-    def check_qos(cls, v: str) -> str:
+    def check_qos(cls, v: str, values: Dict[Any, Any]) -> str:
         """
         Check if the qos is in the list of available qos.
 
@@ -223,6 +250,10 @@ class JobSubmission(BaseModel):
         Returns:
             str: The qos to use.
         """
+        if cls._skip_validation("qos", values):
+            return v
+        if "qos" in values.get("bypass_validation", []):
+            return v
         qos_list = _get_qos_list()
         if v not in qos_list:
             # Raise an error if the qos is not in the list of available qos
@@ -232,7 +263,9 @@ class JobSubmission(BaseModel):
         return v
 
     @validator("hours")
-    def check_hours_value(cls, v: Optional[float]) -> Optional[float]:
+    def check_hours_value(
+        cls, v: Optional[float], values: Dict[Any, Any]
+    ) -> Optional[float]:
         """
         Check if the hours are between 0 and 72.
 
@@ -245,12 +278,16 @@ class JobSubmission(BaseModel):
         Returns:
             Optional[float]: The hours to use.
         """
+        if cls._skip_validation("hours", values):
+            return v
         if v is not None and (v <= 0 or v > 72):
             raise ValueError("Hours must be between 0 and 72")
         return v
 
     @validator("node", "exclude_nodes", "dependency")
-    def check_node_format(cls, v: Optional[str]) -> Optional[str]:
+    def check_node_format(
+        cls, v: Optional[str], values: Dict[Any, Any], field: str
+    ) -> Optional[str]:
         """
         Check if the node, exclude_nodes and dependency have the correct format.
 
@@ -263,6 +300,8 @@ class JobSubmission(BaseModel):
         Returns:
             Optional[str]: The node, exclude_nodes or dependency to use.
         """
+        if cls._skip_validation(field, values):
+            return v
         if v is not None and not re.match(r"^[a-zA-Z0-9,\[\]-]+$", v):
             raise ValueError("Invalid format for node/exclude_nodes/dependency")
         return v
@@ -283,6 +322,8 @@ class JobSubmission(BaseModel):
         Returns:
             str: The container to use.
         """
+        if cls._skip_validation("container", values):
+            return v
         if not v.endswith(".simg"):
             raise FormatError("Container must end with .simg")
         # Check if the container exists
@@ -294,7 +335,9 @@ class JobSubmission(BaseModel):
         return v
 
     @validator("sbatch_file")
-    def check_sbatch_file(cls, v: Optional[str]) -> Optional[str]:
+    def check_sbatch_file(
+        cls, v: Optional[str], values: Dict[Any, Any]
+    ) -> Optional[str]:
         """
         Check if the sbatch_file is None.
 
@@ -304,6 +347,8 @@ class JobSubmission(BaseModel):
         Returns:
             Optional[str]: The sbatch_file to use.
         """
+        if cls._skip_validation("sbatch_file", values):
+            return v
 
         if v is not None:
             logger.warning("sbatch_file is deprecated")
