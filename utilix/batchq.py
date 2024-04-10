@@ -496,6 +496,7 @@ def submit_job(
     exclude_nodes: Optional[str] = None,
     dependency: Optional[str] = None,
     verbose: bool = False,
+    bypass_validation: Optional[List[str]] = None,
 ) -> None:
     """
     Submit a job to the SLURM queue.
@@ -522,6 +523,8 @@ def submit_job(
         dependency (Optional[str]):
             Provide list of job ids to wait for before running this job. Default is None.
         verbose (bool): Print the sbatch command before submitting. Default is False.
+        bypass_validation (List[str]): List of parameters to bypass validation for.
+            Default is None.
     """
     if bind is None:
         bind = DEFAULT_BIND
