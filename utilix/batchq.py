@@ -185,7 +185,7 @@ class JobSubmission(BaseModel):
     
     # validate the bypass_validation so that it can be reached in values
     @validator("bypass_validation", pre=True, each_item=True)
-    def check_bypass_validation(cls, v: str) -> str:
+    def check_bypass_validation(cls, v: list) -> list:
         return v
 
     @validator("bind", pre=True, each_item=True)
@@ -247,8 +247,6 @@ class JobSubmission(BaseModel):
             str: The qos to use.
         """
         if cls._skip_validation("qos", values):
-            return v
-        if "qos" in values.get("bypass_validation", []):
             return v
         qos_list = _get_qos_list()
         if v not in qos_list:
@@ -495,7 +493,7 @@ def submit_job(
     exclude_nodes: Optional[str] = None,
     dependency: Optional[str] = None,
     verbose: bool = False,
-    bypass_validation: Optional[List[str]] = None,
+    bypass_validation: Optional[List[str]] = [],
 ) -> None:
     """
     Submit a job to the SLURM queue.
