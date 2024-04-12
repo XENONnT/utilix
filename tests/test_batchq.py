@@ -1,4 +1,5 @@
 from pydantic import ValidationError
+from utilix import batchq
 from utilix.batchq import JobSubmission, QOSNotFoundError, FormatError, submit_job
 import pytest
 from unittest.mock import patch
@@ -135,6 +136,7 @@ def test_bypass_validation_multiple_fields(valid_job_submission: JobSubmission):
     assert job_submission.qos == "invalid_qos"
     assert job_submission.hours == 100
     assert job_submission.container == "invalid.ext"
+
 
 # Check if all of the possible arguments are handled correctly
 def test_submit_job_arguments():

@@ -476,7 +476,6 @@ class JobSubmission(BaseModel):
 
 def submit_job(
     jobstring: str,
-    bypass_validation: List[str] = [],
     exclude_lc_nodes: bool = True,
     log: str = "job.log",
     partition: Literal[
