@@ -469,7 +469,7 @@ class JobSubmission(BaseModel):
         if self.dry_run:
             return
         # Submit the job
-        slurm.sbatch()
+        slurm.sbatch(shell="/bin/bash")
 
 
 def submit_job(
