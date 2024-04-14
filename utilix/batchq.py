@@ -120,7 +120,7 @@ class JobSubmission(BaseModel):
         default_factory=list, description="List of parameters to bypass validation for"
     )
     exclude_lc_nodes: bool = Field(
-        True, description="Exclude the loosely coupled nodes"
+        False, description="Exclude the loosely coupled nodes"
     )
     log: str = Field("job.log", description="Where to store the log file of the job")
     partition: Literal[
@@ -474,7 +474,7 @@ class JobSubmission(BaseModel):
 
 def submit_job(
     jobstring: str,
-    exclude_lc_nodes: bool = True,
+    exclude_lc_nodes: bool = False,
     log: str = "job.log",
     partition: Literal[
         "dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build"
