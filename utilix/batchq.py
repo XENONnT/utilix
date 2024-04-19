@@ -123,6 +123,10 @@ class JobSubmission(BaseModel):
         False, description="Exclude the loosely coupled nodes"
     )
     log: str = Field("job.log", description="Where to store the log file of the job")
+    bind: List[str] = Field(
+        default_factory=lambda: DEFAULT_BIND,
+        description="Paths to add to the container. Immutable when specifying dali as partition",
+    )
     partition: Literal[
         "dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build"
     ] = Field("xenon1t", description="Partition to submit the job to")
@@ -136,10 +140,6 @@ class JobSubmission(BaseModel):
     mem_per_cpu: int = Field(1000, description="MB requested for job")
     container: str = Field(
         "xenonnt-development.simg", description="Name of the container to activate"
-    )
-    bind: List[str] = Field(
-        default_factory=lambda: DEFAULT_BIND,
-        description="Paths to add to the container. Immutable when specifying dali as partition",
     )
     cpus_per_task: int = Field(1, description="CPUs requested for job")
     hours: Optional[float] = Field(None, description="Max hours of a job")

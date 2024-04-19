@@ -11,6 +11,7 @@ import inspect
 def valid_job_submission() -> JobSubmission:
     return JobSubmission(
         jobstring="Hello World",
+        partition="xenon1t",
         qos="xenon1t",
         hours=10,
         container="xenonnt-development.simg",
@@ -151,3 +152,5 @@ def test_submit_job_arguments():
     assert (
         len(missing_params) == 0
     ), f"Missing parameters in submit_job: {', '.join(missing_params)}"
+
+    
