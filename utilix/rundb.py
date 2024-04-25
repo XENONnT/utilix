@@ -565,6 +565,7 @@ def _collection(experiment, collection, url=None, user=None, password=None, data
     max_pool_size = uconfig.get('RunDB', 'max_pool_size', fallback=100)
     socket_timeout = uconfig.get('RunDB', 'socket_timeout', fallback=60000)
     connect_timeout = uconfig.get('RunDB', 'connect_timeout', fallback=60000)
+    max_idle_time = uconfig.get('RunDB', 'max_idle_time', fallback=1000)
     force_single_server = uconfig.get('RunDB', 'force_single_server', fallback=True)
     direct_connection = uconfig.get('RunDB', 'direct_connection', fallback=True)
     read_preference = uconfig.get('RunDB', 'read_preference', fallback='secondaryPreferred')
@@ -577,7 +578,8 @@ def _collection(experiment, collection, url=None, user=None, password=None, data
         'readPreference': read_preference,
         'maxPoolSize': max_pool_size,
         'socketTimeoutMS': socket_timeout,
-        'connectTimeoutMS': connect_timeout
+        'connectTimeoutMS': connect_timeout,
+        'MaxIdleTimeMS': max_idle_time
     }
 
     # directConnection is only supported after pymongo 4
