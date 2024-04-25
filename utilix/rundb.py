@@ -579,7 +579,7 @@ def _collection(experiment, collection, url=None, user=None, password=None, data
         'maxPoolSize': max_pool_size,
         'socketTimeoutMS': socket_timeout,
         'connectTimeoutMS': connect_timeout,
-        'MaxIdleTimeMS': max_idle_time
+        'maxIdleTimeMS': max_idle_time
     }
 
     # directConnection is only supported after pymongo 4
