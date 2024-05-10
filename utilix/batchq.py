@@ -562,3 +562,14 @@ def count_jobs(string: str = "") -> int:
     output: str = subprocess.check_output(["squeue", "-u", str(USER)]).decode("utf-8")
     lines = output.split("\n")
     return len([job for job in lines if string in job])
+
+
+def used_nodes() -> list[str]:
+    """
+    Get the list of nodes that are currently being used.
+
+    Returns:
+        List[str]: List of nodes that are currently being used.
+    """
+    output = subprocess.check_output(["squeue", "-o", "%R", "-u", str(USER)]).decode("utf-8")
+    return list(set(output.split("\n")[1:-1]))
