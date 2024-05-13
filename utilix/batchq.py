@@ -20,7 +20,7 @@ SCRATCH_DIR: str = os.environ.get("SCRATCH", ".")
 # SCRATCH_DIR must have write permission
 if not os.access(SCRATCH_DIR, os.W_OK):
     raise ValueError(
-        f"SCRATCH_DIR {SCRATCH_DIR} does not have write permission."
+        f"SCRATCH_DIR {SCRATCH_DIR} does not have write permission. "
         "You may need to set SCRATCH_DIR manually in your .bashrc or .bash_profile."
     )
 
@@ -379,6 +379,7 @@ class JobSubmission(BaseModel):
                 "INSTALL_CUTAX is set to 1, ignoring CUTAX_LOCATION and unsetting it for the job."
             )
         new_job_string = (
+            f"echo running on $SLURMD_NODENAME\n"
             f"unset X509_CERT_DIR\n"
             f'if [ "$INSTALL_CUTAX" == "1" ]; then unset CUTAX_LOCATION; fi\n'
             f"module load singularity\n"
