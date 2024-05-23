@@ -44,12 +44,12 @@ TMPDIR: Dict[str, str] = {
 }
 SINGULARITY_DIR: Dict[str, str] = {
     "dali": "/dali/lgrandi/xenonnt/singularity-images",
-    "lgrandi": "/project2/lgrandi/xenonnt/singularity-images",
+    "lgrandi": "/project/lgrandi/xenonnt/singularity-images",
     "xenon1t": "/project2/lgrandi/xenonnt/singularity-images",
     "broadwl": "/project2/lgrandi/xenonnt/singularity-images",
-    "kicp": "/project2/lgrandi/xenonnt/singularity-images",
-    "caslake": "/project2/lgrandi/xenonnt/singularity-images",
-    "build": "/project2/lgrandi/xenonnt/singularity-images",
+    "kicp": "/project/lgrandi/xenonnt/singularity-images",
+    "caslake": "/project/lgrandi/xenonnt/singularity-images",
+    "build": "/project/lgrandi/xenonnt/singularity-images",
 }
 DEFAULT_BIND: List[str] = [
     "/project2/lgrandi/xenonnt/dali:/dali",
