@@ -20,7 +20,7 @@ SCRATCH_DIR: str = os.environ.get("SCRATCH", ".")
 # SCRATCH_DIR must have write permission
 if not os.access(SCRATCH_DIR, os.W_OK):
     raise ValueError(
-        f"SCRATCH_DIR {SCRATCH_DIR} does not have write permission."
+        f"SCRATCH_DIR {SCRATCH_DIR} does not have write permission. "
         "You may need to set SCRATCH_DIR manually in your .bashrc or .bash_profile."
     )
 
@@ -44,12 +44,12 @@ TMPDIR: Dict[str, str] = {
 }
 SINGULARITY_DIR: Dict[str, str] = {
     "dali": "/dali/lgrandi/xenonnt/singularity-images",
-    "lgrandi": "/project2/lgrandi/xenonnt/singularity-images",
+    "lgrandi": "/project/lgrandi/xenonnt/singularity-images",
     "xenon1t": "/project2/lgrandi/xenonnt/singularity-images",
     "broadwl": "/project2/lgrandi/xenonnt/singularity-images",
-    "kicp": "/project2/lgrandi/xenonnt/singularity-images",
-    "caslake": "/project2/lgrandi/xenonnt/singularity-images",
-    "build": "/project2/lgrandi/xenonnt/singularity-images",
+    "kicp": "/project/lgrandi/xenonnt/singularity-images",
+    "caslake": "/project/lgrandi/xenonnt/singularity-images",
+    "build": "/project/lgrandi/xenonnt/singularity-images",
 }
 DEFAULT_BIND: List[str] = [
     "/project2/lgrandi/xenonnt/dali:/dali",
@@ -379,6 +379,7 @@ class JobSubmission(BaseModel):
                 "INSTALL_CUTAX is set to 1, ignoring CUTAX_LOCATION and unsetting it for the job."
             )
         new_job_string = (
+            f"echo running on $SLURMD_NODENAME\n"
             f"unset X509_CERT_DIR\n"
             f'if [ "$INSTALL_CUTAX" == "1" ]; then unset CUTAX_LOCATION; fi\n'
             f"module load singularity\n"
@@ -562,3 +563,14 @@ def count_jobs(string: str = "") -> int:
     output: str = subprocess.check_output(["squeue", "-u", str(USER)]).decode("utf-8")
     lines = output.split("\n")
     return len([job for job in lines if string in job])
+
+
+def used_nodes() -> list[str]:
+    """
+    Get the list of nodes that are currently being used.
+
+    Returns:
+        List[str]: List of nodes that are currently being used.
+    """
+    output = subprocess.check_output(["squeue", "-o", "%R", "-u", str(USER)]).decode("utf-8")
+    return list(set(output.split("\n")[1:-1]))
