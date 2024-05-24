@@ -42,15 +42,9 @@ TMPDIR: Dict[str, str] = {
     "caslake": os.path.join(SCRATCH_DIR, "tmp"),
     "build": os.path.join(SCRATCH_DIR, "tmp"),
 }
-SINGULARITY_DIR: Dict[str, str] = {
-    "dali": "/dali/lgrandi/xenonnt/singularity-images",
-    "lgrandi": "/project/lgrandi/xenonnt/singularity-images",
-    "xenon1t": "/project2/lgrandi/xenonnt/singularity-images",
-    "broadwl": "/project2/lgrandi/xenonnt/singularity-images",
-    "kicp": "/project2/lgrandi/xenonnt/singularity-images",
-    "caslake": "/project/lgrandi/xenonnt/singularity-images",
-    "build": "/project/lgrandi/xenonnt/singularity-images",
-}
+
+SINGULARITY_DIR: str = "lgrandi/xenonnt/singularity-images"
+
 DEFAULT_BIND: List[str] = [
     "/project2/lgrandi/xenonnt/dali:/dali",
     "/project2",
@@ -68,7 +62,6 @@ class QOSNotFoundError(Exception):
     """
     Provided qos is not found in the qos list
     """
-    
 class FormatError(Exception):
     """
     Format of file is not correct
@@ -182,7 +175,6 @@ class JobSubmission(BaseModel):
             bool: True if the field should be validated, False otherwise.
         """
         return field in values.get("bypass_validation", [])
-    
     # validate the bypass_validation so that it can be reached in values
     @validator("bypass_validation", pre=True, each_item=True)
     def check_bypass_validation(cls, v: list) -> list:
@@ -306,7 +298,7 @@ class JobSubmission(BaseModel):
         Check if the container ends with .simg and if it exists.
 
         Args:
-            v (str): The container to check.
+            v (str): Full path of the container or the name of the container file.
             values (Dict[Any, Any]): The values of the model.
 
         Raises:
@@ -316,17 +308,22 @@ class JobSubmission(BaseModel):
         Returns:
             str: The container to use.
         """
-        if cls._skip_validation("container", values):
+        if cls._skip_validation("container", values) or os.path.exists(v):
             return v
         if not v.endswith(".simg"):
             raise FormatError("Container must end with .simg")
-        # Check if the container exists
+        # Search for the container when the full path is not provided
         partition: str = values.get("partition", "xenon1t")
-        if not os.path.exists(os.path.join(SINGULARITY_DIR[partition], v)):
-            raise FileNotFoundError(
-                f"Singularity image {v} does not exist in {SINGULARITY_DIR[partition]}"
-            )
-        return v
+        if partition == "dali":
+            root_dir = ["/dali"]
+        else:
+            root_dir = ["/project2", "/project"]
+        for root in root_dir:
+            image_path = os.path.join(root, SINGULARITY_DIR, v)
+            print("searched in", image_path)
+            if os.path.exists(image_path):
+                return image_path
+        raise FileNotFoundError(f"Container {v} does not exist")
 
     @validator("sbatch_file")
     def check_sbatch_file(
@@ -370,9 +367,6 @@ class JobSubmission(BaseModel):
         bind_string = " ".join(
             [f"--bind {b}" for b in self.bind]  # pylint: disable=not-an-iterable
         )
-        image = os.path.join(SINGULARITY_DIR[self.partition], self.container)
-        if not os.path.exists(image):
-            raise FileNotFoundError(f"Singularity image {image} does not exist")
         # Warn user if CUTAX_LOCATION is unset due to INSTALL_CUTAX
         if os.environ.get("INSTALL_CUTAX") == "1":
             logger.warning(
@@ -383,7 +377,7 @@ class JobSubmission(BaseModel):
             f"unset X509_CERT_DIR\n"
             f'if [ "$INSTALL_CUTAX" == "1" ]; then unset CUTAX_LOCATION; fi\n'
             f"module load singularity\n"
-            f"singularity exec {bind_string} {image} {exec_file}\n"
+            f"singularity exec {bind_string} {self.container} {exec_file}\n"
             f"exit_code=$?\n"
             f"rm {exec_file}\n"
             f"if [ $exit_code -ne 0 ]; then\n"
@@ -572,5 +566,7 @@ def used_nodes() -> list[str]:
     Returns:
         List[str]: List of nodes that are currently being used.
     """
-    output = subprocess.check_output(["squeue", "-o", "%R", "-u", str(USER)]).decode("utf-8")
+    output = subprocess.check_output(["squeue", "-o", "%R", "-u", str(USER)]).decode(
+        "utf-8"
+    )
     return list(set(output.split("\n")[1:-1]))
