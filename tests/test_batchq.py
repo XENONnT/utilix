@@ -67,18 +67,22 @@ def test_invalid_container():
 
 
 def test_valid_container(valid_job_submission: JobSubmission):
-    """Test case to check if a valid container value is accepted."""
-    assert valid_job_submission.container == "xenonnt-development.simg"
+    """Test case to check if a valid path for the container is found."""
+    assert "xenonnt-development.simg" in valid_job_submission.container
 
 
 def test_container_exists(valid_job_submission: JobSubmission, tmp_path: str):
-    """Test case to check if the appropriate validation error is raised when the specified container does not exist."""
-    with patch.dict("utilix.batchq.SINGULARITY_DIR", {"xenon1t": str(tmp_path)}):
+    """
+    Test case to check if the appropriate validation error is raised when the specified container does not exist.
+    """
+    invalid_container = "nonexistent-container.simg"
+    with patch.object(batchq, "SINGULARITY_DIR", "/lgrandi/xenonnt/singularity-images"):
         with pytest.raises(FileNotFoundError) as exc_info:
-            JobSubmission(**valid_job_submission.dict())
-        assert "Singularity image xenonnt-development.simg does not exist" in str(
-            exc_info.value
-        )
+            JobSubmission(
+                **valid_job_submission.dict(exclude={"container"}),
+                container=invalid_container,
+            )
+        assert f"Container {invalid_container} does not exist" in str(exc_info.value)
 
 
 def test_bypass_validation_qos(valid_job_submission: JobSubmission):
