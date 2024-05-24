@@ -42,6 +42,7 @@ TMPDIR: Dict[str, str] = {
     "caslake": os.path.join(SCRATCH_DIR, "tmp"),
     "build": os.path.join(SCRATCH_DIR, "tmp"),
 }
+
 SINGULARITY_DIR: str = "lgrandi/xenonnt/singularity-images"
 
 DEFAULT_BIND: List[str] = [
