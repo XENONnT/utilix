@@ -14,7 +14,7 @@ with open('HISTORY.md') as file:
 
 setup(
     name="utilix",
-    version="0.8.3",
+    version="0.8.4",
     url='https://github.com/XENONnT/utilix',
     description="User-friendly interface to various utilities for XENON users",
     long_description_content_type='text/markdown',
