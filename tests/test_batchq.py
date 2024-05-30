@@ -2,17 +2,39 @@ from pydantic import ValidationError
 from utilix import batchq
 from utilix.batchq import JobSubmission, QOSNotFoundError, FormatError, submit_job
 import pytest
+import os
 from unittest.mock import patch
 import inspect
 
+# Get the server type
+def get_server_type():
+    hostname = os.uname().nodename
+    if "midway2" in hostname:
+        return "Midway2"
+    elif "midway3" in hostname:
+        return "Midway3"
+    elif "dali" in hostname:
+        return "Dali"
+    else:
+        raise ValueError(f"Unknown server type for hostname {hostname}. Please use midway2, midway3, or dali.")
 
 # Fixture to provide a sample valid JobSubmission instance
 @pytest.fixture
 def valid_job_submission() -> JobSubmission:
+    server = get_server_type()
+    if server == "Midway2":
+        partition = "xenon1t"
+        qos = "xenon1t"
+    elif server == "Midway3":
+        partition = "lgrandi"
+        qos = "lgrandi"
+    elif server == "Dali":
+        partition = "dali"
+        qos = "dali"   
     return JobSubmission(
         jobstring="Hello World",
-        partition="xenon1t",
-        qos="xenon1t",
+        partition=partition,
+        qos=qos,
         hours=10,
         container="xenonnt-development.simg",
     )
