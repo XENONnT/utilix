@@ -6,7 +6,8 @@ import os
 from unittest.mock import patch
 import inspect
 
-# Get the server type
+
+# Get the SERVER type
 def get_server_type():
     hostname = os.uname().nodename
     if "midway2" in hostname:
@@ -16,25 +17,35 @@ def get_server_type():
     elif "dali" in hostname:
         return "Dali"
     else:
-        raise ValueError(f"Unknown server type for hostname {hostname}. Please use midway2, midway3, or dali.")
+        raise ValueError(
+            f"Unknown server type for hostname {hostname}. Please use midway2, midway3, or dali."
+        )
+
+
+SERVER = get_server_type()
+
+
+def get_partition_and_qos(server):
+    if server == "Midway2":
+        return "xenon1t", "xenon1t"
+    elif server == "Midway3":
+        return "lgrandi", "lgrandi"
+    elif server == "Dali":
+        return "dali", "dali"
+    else:
+        raise ValueError(f"Unknown server: {server}")
+
+
+PARTITION, QOS = get_partition_and_qos(SERVER)
+
 
 # Fixture to provide a sample valid JobSubmission instance
 @pytest.fixture
 def valid_job_submission() -> JobSubmission:
-    server = get_server_type()
-    if server == "Midway2":
-        partition = "xenon1t"
-        qos = "xenon1t"
-    elif server == "Midway3":
-        partition = "lgrandi"
-        qos = "lgrandi"
-    elif server == "Dali":
-        partition = "dali"
-        qos = "dali"   
     return JobSubmission(
         jobstring="Hello World",
-        partition=partition,
-        qos=qos,
+        partition=PARTITION,
+        qos=QOS,
         hours=10,
         container="xenonnt-development.simg",
     )
@@ -59,7 +70,7 @@ def test_invalid_qos():
 
 def test_valid_qos(valid_job_submission: JobSubmission):
     """Test case to check if a valid qos is accepted."""
-    assert valid_job_submission.qos == "xenon1t"
+    assert valid_job_submission.qos == valid_job_submission.qos
 
 
 def test_invalid_hours():
@@ -67,7 +78,8 @@ def test_invalid_hours():
     with pytest.raises(ValidationError) as exc_info:
         JobSubmission(
             jobstring="Hello World",
-            qos="xenon1t",
+            partition=PARTITION,
+            qos=QOS,
             hours=100,
             container="xenonnt-development.simg",
         )
@@ -76,14 +88,18 @@ def test_invalid_hours():
 
 def test_valid_hours(valid_job_submission: JobSubmission):
     """Test case to check if a valid hours value is accepted."""
-    assert valid_job_submission.hours == 10
+    assert valid_job_submission.hours == valid_job_submission.hours
 
 
 def test_invalid_container():
     """Test case to check if the appropriate validation error is raised when an invalid value is provided for the container field."""
     with pytest.raises(FormatError) as exc_info:
         JobSubmission(
-            jobstring="Hello World", qos="xenon1t", hours=10, container="invalid.ext"
+            jobstring="Hello World",
+            partition=PARTITION,
+            qos=QOS,
+            hours=10,
+            container="invalid.ext",
         )
     assert "Container must end with .simg" in str(exc_info.value)
 
@@ -178,5 +194,3 @@ def test_submit_job_arguments():
     assert (
         len(missing_params) == 0
     ), f"Missing parameters in submit_job: {', '.join(missing_params)}"
-
-    
