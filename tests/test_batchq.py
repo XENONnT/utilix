@@ -3,7 +3,8 @@ from utilix import batchq
 from utilix.batchq import JobSubmission, QOSNotFoundError, FormatError, submit_job
 import pytest
 import os
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+import datetime
 import inspect
 import logging
 
@@ -51,6 +52,65 @@ def valid_job_submission() -> JobSubmission:
         container="xenonnt-development.simg",
     )
 
+def test_job_submission_submit(valid_job_submission: JobSubmission):
+    with patch("utilix.batchq.Slurm") as mock_slurm_class:
+        mock_slurm = MagicMock()
+        mock_slurm_class.return_value = mock_slurm
+
+        valid_job_submission.jobstring = "echo 'Job started'; sleep 10; echo 'Job completed'"
+        valid_job_submission.submit()
+
+        mock_slurm_class.assert_called_once_with(
+            job_name=valid_job_submission.jobname,
+            output=valid_job_submission.log,
+            qos=valid_job_submission.qos,
+            error=valid_job_submission.log,
+            account=valid_job_submission.account,
+            partition=valid_job_submission.partition,
+            mem_per_cpu=valid_job_submission.mem_per_cpu,
+            cpus_per_task=valid_job_submission.cpus_per_task,
+            time=datetime.timedelta(hours=valid_job_submission.hours),
+        )
+        mock_slurm.add_cmd.assert_called_once()
+        mock_slurm.sbatch.assert_called_once_with(shell="/bin/bash")
+
+def test_submit_job_function():
+    jobstring = "echo 'Job started'; sleep 10; echo 'Job completed'"
+
+    with patch("utilix.batchq.JobSubmission") as mock_job_submission_class:
+        mock_job_submission = MagicMock()
+        mock_job_submission_class.return_value = mock_job_submission
+
+        submit_job(
+            jobstring=jobstring,
+            partition=PARTITION,
+            qos=QOS,
+            hours=10,
+            container="xenonnt-development.simg",
+        )
+
+        mock_job_submission_class.assert_called_once_with(
+            jobstring=jobstring,
+            exclude_lc_nodes=False,
+            log="job.log",
+            partition=PARTITION,
+            qos=QOS,
+            account="pi-lgrandi",
+            jobname="somejob",
+            sbatch_file=None,
+            dry_run=False,
+            mem_per_cpu=1000,
+            container="xenonnt-development.simg",
+            bind=batchq.DEFAULT_BIND,
+            cpus_per_task=1,
+            hours=10,
+            node=None,
+            exclude_nodes=None,
+            dependency=None,
+            verbose=False,
+            bypass_validation=[],
+        )
+        mock_job_submission.submit.assert_called_once()
 
 def test_valid_jobstring(valid_job_submission: JobSubmission):
     """Test case to check if a valid jobstring is accepted."""
@@ -196,3 +256,5 @@ def test_submit_job_arguments():
     assert (
         len(missing_params) == 0
     ), f"Missing parameters in submit_job: {', '.join(missing_params)}"
+
+    
