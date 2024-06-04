@@ -58,14 +58,18 @@ DALI_BIND: List[str] = [
     "/dali/lgrandi/grid_proxy/xenon_service_proxy:/project2/lgrandi/grid_proxy/xenon_service_proxy",
 ]
 
+
 class QOSNotFoundError(Exception):
     """
     Provided qos is not found in the qos list
     """
+
+
 class FormatError(Exception):
     """
     Format of file is not correct
     """
+
 
 def _make_executable(path: str) -> None:
     """
@@ -103,6 +107,7 @@ def _get_qos_list() -> List[str]:
         print(f"An error occurred while executing sacctmgr: {e}")
         return []
 
+
 class JobSubmission(BaseModel):
     """
     Class to generate and submit a job to the SLURM queue.
@@ -116,13 +121,13 @@ class JobSubmission(BaseModel):
         False, description="Exclude the loosely coupled nodes"
     )
     log: str = Field("job.log", description="Where to store the log file of the job")
+    partition: Literal[
+        "dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build"
+    ] = Field("xenon1t", description="Partition to submit the job to")
     bind: List[str] = Field(
         default_factory=lambda: DEFAULT_BIND,
         description="Paths to add to the container. Immutable when specifying dali as partition",
     )
-    partition: Literal[
-        "dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build"
-    ] = Field("xenon1t", description="Partition to submit the job to")
     qos: str = Field("xenon1t", description="QOS to submit the job to")
     account: str = Field("pi-lgrandi", description="Account to submit the job to")
     jobname: str = Field("somejob", description="How to name this job")
@@ -175,12 +180,13 @@ class JobSubmission(BaseModel):
             bool: True if the field should be validated, False otherwise.
         """
         return field in values.get("bypass_validation", [])
+
     # validate the bypass_validation so that it can be reached in values
     @validator("bypass_validation", pre=True, each_item=True)
     def check_bypass_validation(cls, v: list) -> list:
         return v
 
-    @validator("bind", pre=True, each_item=True)
+    @validator("bind", pre=True)
     def check_bind(cls, v: str, values: Dict[Any, Any]) -> str:
         """
         Check if the bind path exists.
@@ -194,10 +200,20 @@ class JobSubmission(BaseModel):
         if cls._skip_validation("bind", values):
             return v
 
-        if not os.path.exists(v):
-            logger.warning("Bind path %s does not exist", v)
-
-        return v
+        valid_bind = []
+        invalid_bind = []
+        for path in v:
+            if ":" in path:
+                actual_path = path.split(":")[0]
+            else:
+                actual_path = path
+            if os.path.exists(actual_path):
+                valid_bind.append(path)
+            else:
+                invalid_bind.append(path)
+        if len(invalid_bind) > 0:
+            logger.warning("Invalid bind paths: %s, skipped mounting", invalid_bind)
+        return valid_bind
 
     @validator("partition", pre=True, always=True)
     def overwrite_for_dali(cls, v: str, values: Dict[Any, Any]) -> str:
