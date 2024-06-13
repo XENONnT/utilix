@@ -535,7 +535,7 @@ def pymongo_collection(collection='runs', **kwargs):
     if not database:
         database = uconfig.get('RunDB', 'pymongo_database')
     uri = uri.format(user=user, pw=pw, url=url)
-    c = pymongo.MongoClient(uri, readPreference='secondaryPreferred')
+    c = pymongo.MongoClient(uri, readPreference='secondary')
     DB = c[database]
     coll = DB[collection]
     # Checkout the collection we are returning and raise errors if you want
@@ -560,18 +560,34 @@ def _collection(experiment, collection, url=None, user=None, password=None, data
     if not database:
         database = uconfig.get('RunDB', f'{experiment}_database')
 
+    
     # build other client kwargs
     max_pool_size = uconfig.get('RunDB', 'max_pool_size', fallback=100)
     socket_timeout = uconfig.get('RunDB', 'socket_timeout', fallback=60000)
     connect_timeout = uconfig.get('RunDB', 'connect_timeout', fallback=60000)
+    force_single_server = uconfig.get('RunDB', 'force_single_server', fallback=True)
+    direct_connection = uconfig.get('RunDB', 'direct_connection', fallback=True)
+    read_preference = uconfig.get('RunDB', 'read_preference', fallback='secondaryPreferred')
 
-    uri = f"mongodb://{user}:{password}@{url}"
+    # By default, use only the last server in the url
+    if force_single_server:
+        url = url.split(",")[-1]
+    
+    kwargs = {
+        'readPreference': read_preference,
+        'maxPoolSize': max_pool_size,
+        'socketTimeoutMS': socket_timeout,
+        'connectTimeoutMS': connect_timeout
+    }
+
+    # directConnection is only supported after pymongo 4
+    if int(pymongo.__version__.split(".")[0]) >= 4:
+        kwargs['directConnection'] = direct_connection
+
+    uri = f"mongodb://{user}:{password}@{url}"        
     if uri not in MONGO_CLIENTS:    
-        MONGO_CLIENTS[uri] = pymongo.MongoClient(uri, readPreference='secondaryPreferred',
-                                                        maxPoolSize=max_pool_size,
-                                                        socketTimeoutMS=socket_timeout,
-                                                        connectTimeoutMS=connect_timeout
-                                                        )
+        MONGO_CLIENTS[uri] = pymongo.MongoClient(uri, **kwargs)
+        
     db = MONGO_CLIENTS[uri][database]
     return db[collection]
 
