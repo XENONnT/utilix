@@ -585,24 +585,6 @@ def _collection(experiment, collection, url=None, user=None, password=None, data
     # directConnection is only supported after pymongo 4
     if int(pymongo.__version__.split(".")[0]) >= 4:
         kwargs['directConnection'] = direct_connection
-    force_single_server = uconfig.get('RunDB', 'force_single_server', fallback=True)
-    direct_connection = uconfig.get('RunDB', 'direct_connection', fallback=True)
-    read_preference = uconfig.get('RunDB', 'read_preference', fallback='secondaryPreferred')
-
-    # By default, use only the last server in the url
-    if force_single_server:
-        url = url.split(",")[-1]
-    
-    kwargs = {
-        'readPreference': read_preference,
-        'maxPoolSize': max_pool_size,
-        'socketTimeoutMS': socket_timeout,
-        'connectTimeoutMS': connect_timeout
-    }
-
-    # directConnection is only supported after pymongo 4
-    if int(pymongo.__version__.split(".")[0]) >= 4:
-        kwargs['directConnection'] = direct_connection
 
     uri = f"mongodb://{user}:{password}@{url}"        
     if uri not in MONGO_CLIENTS:    
