@@ -525,6 +525,7 @@ def pymongo_collection(collection='runs', **kwargs):
     user = kwargs.get('user')
     pw = kwargs.get('password')
     database = kwargs.get('database')
+    read_preference = kwargs.get('read_preference', 'secondary')
 
     if not url:
         url = uconfig.get('RunDB', 'pymongo_url')
@@ -535,7 +536,7 @@ def pymongo_collection(collection='runs', **kwargs):
     if not database:
         database = uconfig.get('RunDB', 'pymongo_database')
     uri = uri.format(user=user, pw=pw, url=url)
-    c = pymongo.MongoClient(uri, readPreference='secondary')
+    c = pymongo.MongoClient(uri, readPreference=read_preference)
     DB = c[database]
     coll = DB[collection]
     # Checkout the collection we are returning and raise errors if you want
@@ -567,7 +568,7 @@ def _collection(experiment, collection, url=None, user=None, password=None, data
     connect_timeout = uconfig.get('RunDB', 'connect_timeout', fallback=60000)
     force_single_server = uconfig.get('RunDB', 'force_single_server', fallback=True)
     direct_connection = uconfig.get('RunDB', 'direct_connection', fallback=True)
-    read_preference = uconfig.get('RunDB', 'read_preference', fallback='secondaryPreferred')
+    read_preference = uconfig.get('RunDB', 'read_preference', fallback='secondary')
 
     # By default, use only the last server in the url
     if force_single_server:
@@ -593,6 +594,11 @@ def _collection(experiment, collection, url=None, user=None, password=None, data
 
 
 def xent_collection(collection='runs', **kwargs):
+    return _collection('xent', collection, **kwargs)
+
+def xent_collection_admin(collection='runs', **kwargs):
+    # for admin purposes, the read preference should be primary
+    kwargs['read_preference'] = 'primary'
     return _collection('xent', collection, **kwargs)
 
 
