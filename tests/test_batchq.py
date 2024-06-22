@@ -39,7 +39,6 @@ def get_partition_and_qos(server):
         ]
     elif server == "Midway3":
         return [
-            "broadwl",
             "kicp",
             "lgrandi",
             "caslake",
