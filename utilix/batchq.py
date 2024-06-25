@@ -32,6 +32,8 @@ PARTITIONS: List[str] = [
     "kicp",
     "caslake",
     "build",
+    "bigmem2",
+    "gpu2",
 ]
 TMPDIR: Dict[str, str] = {
     "dali": f"/dali/lgrandi/{USER}/tmp",
@@ -41,6 +43,8 @@ TMPDIR: Dict[str, str] = {
     "kicp": os.path.join(SCRATCH_DIR, "tmp"),
     "caslake": os.path.join(SCRATCH_DIR, "tmp"),
     "build": os.path.join(SCRATCH_DIR, "tmp"),
+    "bigmem2": os.path.join(SCRATCH_DIR, "tmp"),
+    "gpu2": os.path.join(SCRATCH_DIR, "tmp"),
 }
 
 SINGULARITY_DIR: str = "lgrandi/xenonnt/singularity-images"
@@ -122,7 +126,7 @@ class JobSubmission(BaseModel):
     )
     log: str = Field("job.log", description="Where to store the log file of the job")
     partition: Literal[
-        "dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build"
+        "dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build", "bigmem2", "gpu2"
     ] = Field("xenon1t", description="Partition to submit the job to")
     bind: List[str] = Field(
         default_factory=lambda: DEFAULT_BIND,
@@ -488,7 +492,7 @@ def submit_job(
     exclude_lc_nodes: bool = False,
     log: str = "job.log",
     partition: Literal[
-        "dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build"
+        "dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build", "bigmem2", "gpu2"
     ] = "xenon1t",
     qos: str = "xenon1t",
     account: str = "pi-lgrandi",
@@ -513,7 +517,7 @@ def submit_job(
         jobstring (str): The command to execute.
         exclude_lc_nodes (bool): Exclude the loosely coupled nodes. Default is True.
         log (str): Where to store the log file of the job. Default is "job.log".
-        partition (Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build"]):
+        partition (Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build", "bigmem2", "gpu2" (the only GPU node)]):
             Partition to submit the job to. Default is "xenon1t".
         qos (str): QOS to submit the job to. Default is "xenon1t".
         account (str): Account to submit the job to. Default is "pi-lgrandi".
