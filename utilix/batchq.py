@@ -475,8 +475,6 @@ class JobSubmission(BaseModel):
         # Add the job command
         slurm.add_cmd(self.jobstring)
 
-        print(f"Your log is located at: {self.log}")
-
         # Handle dry run scenario
         if self.verbose or self.dry_run:
             print(f"Generated slurm script:\n{slurm.script()}")
@@ -484,7 +482,16 @@ class JobSubmission(BaseModel):
         if self.dry_run:
             return
         # Submit the job
-        slurm.sbatch(shell="/bin/bash")
+        
+        try:
+            job_id = slurm.sbatch(shell="/bin/bash")
+            if job_id:
+                print(f"Job submitted successfully. Job ID: {job_id}")
+                print(f"Your log is located at: {self.log}")
+            else:
+                print("Job submission failed.")
+        except Exception as e:
+            print(f"An error occurred while submitting the job: {str(e)}")
 
 
 def submit_job(
