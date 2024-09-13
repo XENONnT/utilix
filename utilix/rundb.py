@@ -518,10 +518,11 @@ class PyMongoCannotConnect(Exception):
 
 
 def test_collection(collection, url, raise_errors=False):
-    """Warn user if client can be troublesome if read preference is not specified :param collection:
+    """Warn user if client can be troublesome if read preference is not specified.
 
-    pymongo client :param url: the mongo url we are testing (for the error message) :param
-    raise_errors: if False (default) warn, otherwise raise an error.
+    :param collection: pymongo client
+    :param url: the mongo url we are testing (for the error message)
+    :param raise_errors: if False (default) warn, otherwise raise an error.
 
     """
     try:
