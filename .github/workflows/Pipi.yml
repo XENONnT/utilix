@@ -1,4 +1,4 @@
-# Lets upload utilix to PyPi to make it pip instalable 
+# Lets upload utilix to PyPi to make it pip instalable
 # Mostly based on https://github.com/marketplace/actions/pypi-publish
 on:
   release:

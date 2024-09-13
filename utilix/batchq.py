@@ -1,6 +1,4 @@
-"""
-This module provides utilities to generate and submit jobs to the SLURM queue.
-"""
+"""This module provides utilities to generate and submit jobs to the SLURM queue."""
 
 import datetime
 import os
@@ -8,7 +6,7 @@ import subprocess
 import re
 import tempfile
 from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, validator, ValidationError, root_validator
+from pydantic import BaseModel, Field, validator
 from simple_slurm import Slurm  # type: ignore
 from utilix import logger
 
@@ -64,26 +62,22 @@ DALI_BIND: List[str] = [
 
 
 class QOSNotFoundError(Exception):
-    """
-    Provided qos is not found in the qos list
-    """
+    """Provided qos is not found in the qos list."""
 
 
 class FormatError(Exception):
-    """
-    Format of file is not correct
-    """
+    """Format of file is not correct."""
 
 
 def _make_executable(path: str) -> None:
-    """
-    Make a file executable by the user, group and others.
+    """Make a file executable by the user, group and others.
 
     Args:
         path (str): Path to the file to make executable.
 
     Raises:
         FileNotFoundError: If the file does not exist.
+
     """
     if not os.path.exists(path):
         raise FileNotFoundError(f"File {path} does not exist")
@@ -93,17 +87,15 @@ def _make_executable(path: str) -> None:
 
 
 def _get_qos_list() -> List[str]:
-    """
-    Get the list of available qos.
+    """Get the list of available qos.
 
     Returns:
         List[str]: The list of available qos.
+
     """
     cmd = "sacctmgr show qos format=name -p"
     try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, check=True, shell=True
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True, shell=True)
         qos_list: List[str] = result.stdout.strip().split("\n")
         qos_list = [qos[:-1] for qos in qos_list]
         return qos_list
@@ -113,17 +105,13 @@ def _get_qos_list() -> List[str]:
 
 
 class JobSubmission(BaseModel):
-    """
-    Class to generate and submit a job to the SLURM queue.
-    """
+    """Class to generate and submit a job to the SLURM queue."""
 
     jobstring: str = Field(..., description="The command to execute")
     bypass_validation: List[str] = Field(
         default_factory=list, description="List of parameters to bypass validation for"
     )
-    exclude_lc_nodes: bool = Field(
-        False, description="Exclude the loosely coupled nodes"
-    )
+    exclude_lc_nodes: bool = Field(False, description="Exclude the loosely coupled nodes")
     log: str = Field("job.log", description="Where to store the log file of the job")
     bind: List[str] = Field(
         default_factory=lambda: DEFAULT_BIND,
@@ -145,9 +133,7 @@ class JobSubmission(BaseModel):
     )
     cpus_per_task: int = Field(1, description="CPUs requested for job")
     hours: Optional[float] = Field(None, description="Max hours of a job")
-    node: Optional[str] = Field(
-        None, description="Define a certain node to submit your job"
-    )
+    node: Optional[str] = Field(None, description="Define a certain node to submit your job")
     exclude_nodes: Optional[str] = Field(
         None,
         description="Define a list of nodes which should be excluded from submission",
@@ -155,9 +141,7 @@ class JobSubmission(BaseModel):
     dependency: Optional[str] = Field(
         None, description="Provide list of job ids to wait for before running this job"
     )
-    verbose: bool = Field(
-        False, description="Print the sbatch command before submitting"
-    )
+    verbose: bool = Field(False, description="Print the sbatch command before submitting")
 
     # Check if there is any positional argument which is not allowed
     def __new__(cls, *args, **kwargs):
@@ -173,8 +157,7 @@ class JobSubmission(BaseModel):
 
     @classmethod
     def _skip_validation(cls, field: str, values: Dict[Any, Any]) -> bool:
-        """
-        Check if a field should be validated based on the bypass_validation list.
+        """Check if a field should be validated based on the bypass_validation list.
 
         Args:
             field (str): The name of the field to check.
@@ -182,6 +165,7 @@ class JobSubmission(BaseModel):
 
         Returns:
             bool: True if the field should be validated, False otherwise.
+
         """
         return field in values.get("bypass_validation", [])
 
@@ -191,15 +175,15 @@ class JobSubmission(BaseModel):
         return v
 
     @validator("bind", pre=True)
-    def check_bind(cls, v: str, values: Dict[Any, Any]) -> str:
-        """
-        Check if the bind path exists.
+    def check_bind(cls, v: list, values: Dict[Any, Any]) -> list:
+        """Check if the bind path exists.
 
         Args:
             v (str): The bind path to check.
 
         Returns:
             str: The bind path if it exists.
+
         """
         if cls._skip_validation("bind", values):
             return v
@@ -221,8 +205,7 @@ class JobSubmission(BaseModel):
 
     @validator("partition", pre=True, always=True)
     def overwrite_for_dali(cls, v: str, values: Dict[Any, Any]) -> str:
-        """
-        Overwrite the partition to dali if the container is xenonnt-development.simg.
+        """Overwrite the partition to dali if the container is xenonnt-development.simg.
 
         Args:
             v (str): The partition to check.
@@ -230,6 +213,7 @@ class JobSubmission(BaseModel):
 
         Returns:
             str: The partition to use.
+
         """
         if cls._skip_validation("partition", values):
             return v
@@ -249,31 +233,26 @@ class JobSubmission(BaseModel):
 
     @validator("qos", pre=True, always=True)
     def check_qos(cls, v: str, values: Dict[Any, Any]) -> str:
-        """
-        Check if the qos is in the list of available qos.
+        """Check if the qos is in the list of available qos.
 
         Args:
             v (str): The qos to check.
 
         Returns:
             str: The qos to use.
+
         """
         if cls._skip_validation("qos", values):
             return v
         qos_list = _get_qos_list()
         if v not in qos_list:
             # Raise an error if the qos is not in the list of available qos
-            raise QOSNotFoundError(
-                f"QOS {v} is not in the list of available qos: \n {qos_list}"
-            )
+            raise QOSNotFoundError(f"QOS {v} is not in the list of available qos: \n {qos_list}")
         return v
 
     @validator("hours")
-    def check_hours_value(
-        cls, v: Optional[float], values: Dict[Any, Any]
-    ) -> Optional[float]:
-        """
-        Check if the hours are between 0 and 72.
+    def check_hours_value(cls, v: Optional[float], values: Dict[Any, Any]) -> Optional[float]:
+        """Check if the hours are between 0 and 72.
 
         Args:
             v (Optional[float]): The hours to check.
@@ -283,6 +262,7 @@ class JobSubmission(BaseModel):
 
         Returns:
             Optional[float]: The hours to use.
+
         """
         if cls._skip_validation("hours", values):
             return v
@@ -294,8 +274,7 @@ class JobSubmission(BaseModel):
     def check_node_format(
         cls, v: Optional[str], values: Dict[Any, Any], field: str
     ) -> Optional[str]:
-        """
-        Check if the node, exclude_nodes and dependency have the correct format.
+        """Check if the node, exclude_nodes and dependency have the correct format.
 
         Args:
             v (Optional[str]): The node, exclude_nodes or dependency to check.
@@ -305,6 +284,7 @@ class JobSubmission(BaseModel):
 
         Returns:
             Optional[str]: The node, exclude_nodes or dependency to use.
+
         """
         if cls._skip_validation(field, values):
             return v
@@ -314,8 +294,7 @@ class JobSubmission(BaseModel):
 
     @validator("container")
     def check_container_format(cls, v: str, values: Dict[Any, Any]) -> str:
-        """
-        Check if the container ends with .simg and if it exists.
+        """Check if the container ends with .simg and if it exists.
 
         Args:
             v (str): Full path of the container or the name of the container file.
@@ -327,6 +306,7 @@ class JobSubmission(BaseModel):
 
         Returns:
             str: The container to use.
+
         """
         if cls._skip_validation("container", values) or os.path.exists(v):
             return v
@@ -346,17 +326,15 @@ class JobSubmission(BaseModel):
         raise FileNotFoundError(f"Container {v} does not exist")
 
     @validator("sbatch_file")
-    def check_sbatch_file(
-        cls, v: Optional[str], values: Dict[Any, Any]
-    ) -> Optional[str]:
-        """
-        Check if the sbatch_file is None.
+    def check_sbatch_file(cls, v: Optional[str], values: Dict[Any, Any]) -> Optional[str]:
+        """Check if the sbatch_file is None.
 
         Args:
             v (Optional[str]): The sbatch_file to check.
 
         Returns:
             Optional[str]: The sbatch_file to use.
+
         """
         if cls._skip_validation("sbatch_file", values):
             return v
@@ -366,22 +344,20 @@ class JobSubmission(BaseModel):
         return v
 
     def _create_singularity_jobstring(self) -> str:
-        """
-        Wrap the jobstring with the singularity command.
+        """Wrap the jobstring with the singularity command.
 
         Raises:
             FileNotFoundError: If the singularity image does not exist.
 
         Returns:
             str: The new jobstring with the singularity command.
+
         """
         if self.dry_run:
             file_discriptor = None
             exec_file = f"{TMPDIR[self.partition]}/tmp.sh"
         else:
-            file_discriptor, exec_file = tempfile.mkstemp(
-                suffix=".sh", dir=TMPDIR[self.partition]
-            )
+            file_discriptor, exec_file = tempfile.mkstemp(suffix=".sh", dir=TMPDIR[self.partition])
             _make_executable(exec_file)
             os.write(file_discriptor, bytes("#!/bin/bash\n" + self.jobstring, "utf-8"))
         bind_string = " ".join(
@@ -410,11 +386,11 @@ class JobSubmission(BaseModel):
         return new_job_string
 
     def _get_lc_nodes(self) -> List[str]:
-        """
-        Get the list of 'lc' (loosely coupled) nodes in the specified partition.
+        """Get the list of 'lc' (loosely coupled) nodes in the specified partition.
 
         Returns:
             List[str]: The list of 'lc' node names.
+
         """
         cmd = f"nodestatus {self.partition}"
         try:
@@ -433,9 +409,7 @@ class JobSubmission(BaseModel):
             return []
 
     def submit(self) -> None:
-        """
-        Submit the job to the SLURM queue.
-        """
+        """Submit the job to the SLURM queue."""
         os.makedirs(TMPDIR[self.partition], exist_ok=True)
         # Initialize a dictionary with mandatory parameters
         slurm_params: Dict[str, Any] = {
@@ -482,7 +456,7 @@ class JobSubmission(BaseModel):
         if self.dry_run:
             return
         # Submit the job
-        
+
         try:
             job_id = slurm.sbatch(shell="/bin/bash")
             if job_id:
@@ -517,14 +491,13 @@ def submit_job(
     verbose: bool = False,
     bypass_validation: Optional[List[str]] = [],
 ) -> None:
-    """
-    Submit a job to the SLURM queue.
+    """Submit a job to the SLURM queue.
 
     Args:
         jobstring (str): The command to execute.
         exclude_lc_nodes (bool): Exclude the loosely coupled nodes. Default is True.
         log (str): Where to store the log file of the job. Default is "job.log".
-        partition (Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build", "bigmem2", "gpu2" (the only GPU node)]):
+        partition (Literal["dali", "lgrandi", "xenon1t", "broadwl", "kicp", "caslake", "build", "bigmem2", "gpu2" (the only GPU node)]):  # noqa
             Partition to submit the job to. Default is "xenon1t".
         qos (str): QOS to submit the job to. Default is "xenon1t".
         account (str): Account to submit the job to. Default is "pi-lgrandi".
@@ -544,6 +517,7 @@ def submit_job(
         verbose (bool): Print the sbatch command before submitting. Default is False.
         bypass_validation (List[str]): List of parameters to bypass validation for.
             Default is None.
+
     """
     if bind is None:
         bind = DEFAULT_BIND
@@ -572,14 +546,14 @@ def submit_job(
 
 
 def count_jobs(string: str = "") -> int:
-    """
-    Count the number of jobs in the queue.
+    """Count the number of jobs in the queue.
 
     Args:
         string (str, optional): String to search for in the job names. Defaults to "".
 
     Returns:
         int: Number of jobs in the queue.
+
     """
     output: str = subprocess.check_output(["squeue", "-u", str(USER)]).decode("utf-8")
     lines = output.split("\n")
@@ -587,13 +561,11 @@ def count_jobs(string: str = "") -> int:
 
 
 def used_nodes() -> list[str]:
-    """
-    Get the list of nodes that are currently being used.
+    """Get the list of nodes that are currently being used.
 
     Returns:
         List[str]: List of nodes that are currently being used.
+
     """
-    output = subprocess.check_output(["squeue", "-o", "%R", "-u", str(USER)]).decode(
-        "utf-8"
-    )
+    output = subprocess.check_output(["squeue", "-o", "%R", "-u", str(USER)]).decode("utf-8")
     return list(set(output.split("\n")[1:-1]))
