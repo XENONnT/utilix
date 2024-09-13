@@ -1,5 +1,6 @@
 # utilix
 [![PyPI version shields.io](https://img.shields.io/pypi/v/utilix.svg)](https://pypi.python.org/pypi/utilix/)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/XENONnT/utilix/master.svg)](https://results.pre-commit.ci/latest/github/XENONnT/utilix/master)
 
 ``utilix`` is a utility package for XENON software, mainly relating to analysis. It currently has two main features: (1) a general XENON configuration framework and (2) easy access to the runsDB by wrapping python calls to a RESTful API. Eventually, we would like to include easy functions for interacting with the Midway and OSG batch queues.
 
