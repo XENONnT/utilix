@@ -32,6 +32,6 @@ jobs:
       - name: Test package
         # Could add more but perhaps we need to consider what we want to test first
         run: |
-         python -m unittest tests/test_import.py
+          python -m unittest tests/test_import.py
       - name: goodbye
         run: echo goodbye
