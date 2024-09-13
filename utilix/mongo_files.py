@@ -134,7 +134,7 @@ class GridFsDownloadBase:
         # Disable the inspection of `Unreachable code`
         # pylint: disable=unreachable
         # for config in self.list_files():
-        #    self.download_single(config)
+        #     self.download_single(config)
 
     @staticmethod
     def _check_store_files_at(cache_folder_alternatives):
