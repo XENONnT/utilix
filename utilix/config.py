@@ -1,17 +1,6 @@
 import os
 import configparser
-import logging
-
-
-def setup_logger(logging_level="WARNING"):
-    logger = logging.getLogger("utilix")
-    ch = logging.StreamHandler()
-    ch.setLevel(logging_level)
-    logger.setLevel(logging_level)
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    return logger
+from .log import setup_logger
 
 
 class EnvInterpolation(configparser.BasicInterpolation):

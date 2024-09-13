@@ -1,16 +1,17 @@
 __version__ = "0.8.5"
 
+from . import log
 from . import config
 
 # try loading config, if it doesn't work then set uconfig to None
-# this is needed so that strax(en) CI  tests will work even without a config file
+# this is needed so that strax(en) CI tests will work even without a config file
 uconfig = config.Config()
 
 if uconfig.is_configured:
-    logger = config.setup_logger(uconfig.logging_level)
+    logger = log.setup_logger(uconfig.logging_level)
 else:
     uconfig = None  # type: ignore
-    logger = config.setup_logger()
+    logger = log.setup_logger()
 
 from .rundb import DB, xent_collection, xe1t_collection
 from .mongo_files import MongoUploader, MongoDownloader, APIUploader, APIDownloader

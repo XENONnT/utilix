@@ -8,7 +8,7 @@ import tempfile
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, validator
 from simple_slurm import Slurm  # type: ignore
-from utilix import logger
+from . import logger
 
 USER: Optional[str] = os.environ.get("USER")
 if USER is None:
