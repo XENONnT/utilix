@@ -8,9 +8,8 @@ uconfig = config.Config()
 
 if uconfig.is_configured:
     logger = config.setup_logger(uconfig.logging_level)
-
 else:
-    uconfig = None
+    uconfig = None  # type: ignore
     logger = config.setup_logger()
 
 from .rundb import DB, xent_collection, xe1t_collection
