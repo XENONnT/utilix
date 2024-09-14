@@ -31,11 +31,9 @@ def Responder(func):
         st = func(*args, **kwargs)
         if st.status_code != 200:
             logger.error(
-                "\n\tAPI Call was {0}\n\tReturn code: {1}\n\tReason: {2} ".format(
-                    args[1],
-                    st.status_code,
-                    st.text,
-                )
+                f"\n\tAPI Call was {args[1]}"
+                f"\n\tReturn code: {st.status_code}"
+                f"\n\tReason: {st.text} "
             )
 
             if st.status_code == 401:

@@ -3,13 +3,24 @@ import configparser
 import logging
 
 
-def setup_logger(logging_level="WARNING"):
-    logger = logging.getLogger("utilix")
+def setup_logger(logger="utilix", logging_level="WARNING"):
+    set_logging_level(logger=logger, logging_level=logging_level)
+    logger = setup_handler(logger=logger, logging_level=logging_level)
+    return logger
+
+
+def set_logging_level(logger="utilix", logging_level="WARNING"):
+    logger = logging.getLogger(logger)
+    logger.setLevel(logging_level)
+    return logger
+
+
+def setup_handler(logger="utilix", logging_level="WARNING"):
+    logger = logging.getLogger(logger)
     if logger.hasHandlers():
         logger.handlers.clear()
     ch = logging.StreamHandler()
     ch.setLevel(logging_level)
-    logger.setLevel(logging_level)
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     ch.setFormatter(formatter)
     logger.addHandler(ch)
@@ -96,7 +107,7 @@ class Config:
         @property
         def logging_level(self):
             # look for logging level in 'basic'  field in config file. Defaults to WARNING
-            level = self.get("basic", "logging_level", fallback="WARNING").upper()
+            level = self.get("basic", "logging_level", fallback="WARNING")
             possible_levels = ["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
             if level not in possible_levels:
                 raise RuntimeError(
