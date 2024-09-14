@@ -7,7 +7,7 @@ from . import config
 uconfig = config.Config()
 
 if uconfig.is_configured:
-    logger = config.setup_logger(uconfig.logging_level)
+    logger = config.setup_logger(logging_level=uconfig.logging_level)
 else:
     uconfig = None  # type: ignore
     logger = config.setup_logger()
