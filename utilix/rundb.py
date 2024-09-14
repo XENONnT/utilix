@@ -5,20 +5,17 @@ import json
 import datetime
 import logging
 import pymongo
+from typing import Tuple, Dict
 from warnings import warn
 import time
 
-from . import uconfig, io
-from .config import setup_logger
+from . import uconfig, logger, io
 
 
 # Config the logger:
 if uconfig is not None:  # type: ignore
     PREFIX = uconfig.get("RunDB", "rundb_api_url", fallback=None)  # type: ignore
     BASE_HEADERS = {"Content-Type": "application/json", "Cache-Control": "no-cache"}
-    logger = setup_logger(uconfig.logging_level)  # type: ignore
-else:
-    logger = setup_logger()
 
 
 class NewTokenError(Exception):
@@ -181,8 +178,24 @@ class Token:
 class DB:
     """Wrapper around the RunDB API."""
 
-    def __init__(self, token_path=None):
+    _instances: Dict[Tuple, "DB"] = {}
+    _initialized: Dict[Tuple, bool] = {}
 
+    def __new__(cls, *args, **kwargs):
+        key = (args, frozenset(kwargs.items()))
+        if key not in cls._instances:
+            cls._instances[key] = super(DB, cls).__new__(cls)
+            cls._initialized[key] = False
+        return cls._instances[key]
+
+    def __init__(self, *args, **kwargs):
+        key = (args, frozenset(kwargs.items()))
+        if not self._initialized[key]:
+            self._instances[key].initialize(*args, **kwargs)
+            self._initialized[key] = True
+        return
+
+    def initialize(self, token_path=None):
         if token_path is None:
             if "HOME" not in os.environ:
                 logger.error("$HOME is not defined in the environment")
@@ -505,10 +518,11 @@ class PyMongoCannotConnect(Exception):
 
 
 def test_collection(collection, url, raise_errors=False):
-    """Warn user if client can be troublesome if read preference is not specified :param collection:
+    """Warn user if client can be troublesome if read preference is not specified.
 
-    pymongo client :param url: the mongo url we are testing (for the error message) :param
-    raise_errors: if False (default) warn, otherwise raise an error.
+    :param collection: pymongo client
+    :param url: the mongo url we are testing (for the error message)
+    :param raise_errors: if False (default) warn, otherwise raise an error.
 
     """
     try:
