@@ -18,7 +18,7 @@ def filter_tarinfo(tarinfo, git_ignored_files):
 
 class Tarball:
     def __init__(self, destination, package_name):
-        """Class to create a tarball of package.
+        """Class to tarball the editable user-installed from git repo.
 
         :param destination: the destination folder of the tarball
         :param package_name: the name of package
