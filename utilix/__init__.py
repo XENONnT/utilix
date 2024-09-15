@@ -12,5 +12,6 @@ else:
     uconfig = None  # type: ignore
     logger = config.setup_logger()
 
+from .shell import Shell
 from .rundb import DB, xent_collection, xe1t_collection
 from .mongo_files import MongoUploader, MongoDownloader, APIUploader, APIDownloader
