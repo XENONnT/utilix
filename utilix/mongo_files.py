@@ -46,8 +46,7 @@ class GridFsBase:
     def get_query_config(self, config):
         """Generate identifier to query against. This is just the configs name.
 
-        :param config: str,  name of the file of interest
-        :return: dict, that can be used in queries
+        :param config: str,  name of the file of interest :return: dict, that can be used in queries
 
         """
         return {self.config_identifier: config}
@@ -55,8 +54,8 @@ class GridFsBase:
     def document_format(self, config):
         """Format of the document to upload.
 
-        :param config: str,  name of the file of interest
-        :return: dict, that will be used to add the document
+        :param config: str,  name of the file of interest :return: dict, that will be used to add
+        the document
 
         """
         doc = self.get_query_config(config)
@@ -142,8 +141,7 @@ class GridFsDownloadBase:
         Order does matter as we iterate until we find one folder that is willing.
 
         :param cache_folder_alternatives: tuple, this tuple must be a list of paths one can try to
-            store the downloaded data
-        :return: str, the folder that we can write to.
+        store the downloaded data :return: str, the folder that we can write to.
 
         """
         if not isinstance(cache_folder_alternatives, (tuple, list)):
@@ -232,8 +230,8 @@ class GridFsInterfaceMongo(GridFsBase):
     def config_exists(self, config):
         """Quick check if this config is already saved in the collection.
 
-        :param config: str,  name of the file of interest
-        :return: bool, is this config name stored in the database
+        :param config: str,  name of the file of interest :return: bool, is this config name stored
+        in the database
 
         """
         query = self.get_query_config(config)
@@ -322,8 +320,8 @@ class MongoUploader(GridFsInterfaceMongo, GridFsUploadBase):
     def upload_single(self, config, abs_path):
         """Upload a single file to gridfs.
 
-        :param config: str, the name under which this file should be stored
-        :param abs_path: str, the absolute path of the file
+        :param config: str, the name under which this file should be stored :param abs_path: str,
+        the absolute path of the file
 
         """
         doc = self.document_format(config)
@@ -369,11 +367,10 @@ class MongoDownloader(GridFsInterfaceMongo, GridFsDownloadBase):
     def download_single(self, config_name: str, write_to=None, human_readable_file_name=False):
         """Download the config_name if it exists.
 
-        :param config_name: str, the name under which the file is stored
-        :param human_readable_file_name: bool, store the file also under it's human readable name.
-            It is better not to use this as the user might not know if the version of the file is
-            the latest.
-        :return: str, the absolute path of the file requested
+        :param config_name: str, the name under which the file is stored :param
+        human_readable_file_name: bool, store the file also under it's human readable name.     It
+        is better not to use this as the user might not know if the version of the file is     the
+        latest. :return: str, the absolute path of the file requested
 
         """
         fs_object = self.get_gridfs_object(config_name)
@@ -431,8 +428,8 @@ class GridFsInterfaceAPI(GridFsBase):
     def config_exists(self, config):
         """Quick check if this config is already saved in the collection.
 
-        :param config: str,  name of the file of interest
-        :return: bool, is this config name stored in the database
+        :param config: str,  name of the file of interest :return: bool, is this config name stored
+        in the database
 
         """
         query = self.get_query_config(config)
@@ -486,11 +483,10 @@ class APIDownloader(GridFsInterfaceAPI, GridFsDownloadBase):
     def download_single(self, config_name: str, write_to=None, human_readable_file_name=False):
         """Download the config_name if it exists.
 
-        :param config_name: str, the name under which the file is stored
-        :param human_readable_file_name: bool, store the file also under it's human readable name.
-            It is better not to use this as the user might not know if the version of the file is
-            the latest.
-        :return: str, the absolute path of the file requested
+        :param config_name: str, the name under which the file is stored :param
+        human_readable_file_name: bool, store the file also under it's human readable name.     It
+        is better not to use this as the user might not know if the version of the file is     the
+        latest. :return: str, the absolute path of the file requested
 
         """
 
@@ -536,8 +532,8 @@ class APIUploader(GridFsInterfaceAPI, GridFsUploadBase):
     def upload_single(self, config, abs_path):
         """Upload a single file to gridfs.
 
-        :param config: str, the name under which this file should be stored
-        :param abs_path: str, the absolute path of the file
+        :param config: str, the name under which this file should be stored :param abs_path: str,
+        the absolute path of the file
 
         """
         if not os.path.exists(abs_path):
