@@ -46,7 +46,7 @@ class GridFsBase:
     def get_query_config(self, config):
         """Generate identifier to query against. This is just the configs name.
 
-        :param config: str,  name of the file of interest
+        :param config: str, name of the file of interest
         :return: dict, that can be used in queries
 
         """
@@ -55,7 +55,7 @@ class GridFsBase:
     def document_format(self, config):
         """Format of the document to upload.
 
-        :param config: str,  name of the file of interest
+        :param config: str, name of the file of interest
         :return: dict, that will be used to add the document
 
         """
@@ -142,7 +142,7 @@ class GridFsDownloadBase:
         Order does matter as we iterate until we find one folder that is willing.
 
         :param cache_folder_alternatives: tuple, this tuple must be a list of paths one can try to
-            store the downloaded data
+            store the downloaded data.
         :return: str, the folder that we can write to.
 
         """
@@ -232,7 +232,7 @@ class GridFsInterfaceMongo(GridFsBase):
     def config_exists(self, config):
         """Quick check if this config is already saved in the collection.
 
-        :param config: str,  name of the file of interest
+        :param config: str, name of the file of interest
         :return: bool, is this config name stored in the database
 
         """
@@ -431,7 +431,7 @@ class GridFsInterfaceAPI(GridFsBase):
     def config_exists(self, config):
         """Quick check if this config is already saved in the collection.
 
-        :param config: str,  name of the file of interest
+        :param config: str, name of the file of interest
         :return: bool, is this config name stored in the database
 
         """
