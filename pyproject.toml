@@ -4,6 +4,9 @@ name = "utilix"
 version = "0.8.5"
 description = "User-friendly interface to various utilities for XENON users"
 readme = "README.md"
+authors = [
+  "utilix developers",
+]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "License :: OSI Approved :: BSD License",
