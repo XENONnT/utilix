@@ -18,6 +18,9 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics",
 ]
 repository = "https://github.com/XENONnT/utilix"
+packages = [
+    { include = "utilix" }
+]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.13"
