@@ -10,9 +10,7 @@ import commentjson
 def read_file(path):
     """Open a file from disk.
 
-    Auto-infers the file format
-    :param path: str, file to open
-    :return: opened file
+    Auto-infers the file format :param path: str, file to open :return: opened file
 
     """
     # copied from straxen.common.open_resource
