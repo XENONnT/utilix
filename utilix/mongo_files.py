@@ -369,10 +369,11 @@ class MongoDownloader(GridFsInterfaceMongo, GridFsDownloadBase):
     def download_single(self, config_name: str, write_to=None, human_readable_file_name=False):
         """Download the config_name if it exists.
 
-        :param config_name: str, the name under which the file is stored :param
-        human_readable_file_name: bool, store the file also under it's human readable name.     It
-        is better not to use this as the user might not know if the version of the file is     the
-        latest. :return: str, the absolute path of the file requested
+        :param config_name: str, the name under which the file is stored
+        :param human_readable_file_name: bool, store the file also under it's human readable name.
+            It is better not to use this as the user might not know if the version of the file is
+            the latest.
+        :return: str, the absolute path of the file requested
 
         """
         fs_object = self.get_gridfs_object(config_name)
@@ -485,10 +486,11 @@ class APIDownloader(GridFsInterfaceAPI, GridFsDownloadBase):
     def download_single(self, config_name: str, write_to=None, human_readable_file_name=False):
         """Download the config_name if it exists.
 
-        :param config_name: str, the name under which the file is stored :param
-        human_readable_file_name: bool, store the file also under it's human readable name.     It
-        is better not to use this as the user might not know if the version of the file is     the
-        latest. :return: str, the absolute path of the file requested
+        :param config_name: str, the name under which the file is stored
+        :param human_readable_file_name: bool, store the file also under it's human readable name.
+            It is better not to use this as the user might not know if the version of the file is
+            the latest.
+        :return: str, the absolute path of the file requested
 
         """
 
