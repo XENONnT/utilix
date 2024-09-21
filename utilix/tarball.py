@@ -20,8 +20,8 @@ class Tarball:
     def __init__(self, destination, package_name):
         """Class to tarball the editable user-installed from git repo.
 
-        :param destination: the destination folder of the tarball :param package_name: the name of
-        package
+        :param destination: the destination folder of the tarball
+        :param package_name: the name of package
 
         """
         self.destination = destination
