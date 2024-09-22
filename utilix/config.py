@@ -100,9 +100,12 @@ class Config:
 
             self.is_configured = config_file_path is not None
 
-        def get_list(self, category, key):
-            list_string = self.get(category, key)
-            return [s.strip() for s in list_string.split(",")]
+        def getlist(self, category, key, fallback=[]):
+            list_string = self.get(category, key, fallback=",".join(fallback))
+            if list_string:
+                return [s.strip() for s in list_string.split(",")]
+            else:
+                return []
 
         @property
         def logging_level(self):
