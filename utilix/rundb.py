@@ -108,8 +108,9 @@ class Token:
         data = json.dumps({"username": username, "password": pw})
         logger.debug("Creating a new token: doing API call now")
         # try making a new token 3 times
+        n_try = uconfig.get("RunDB", "rundb_retry", fallback=3)
         success = False
-        for _try in range(3):
+        for _try in range(n_try):
             try:
                 response = requests.post(path, data=data, headers=BASE_HEADERS)
                 response_json = json.loads(response.text)
