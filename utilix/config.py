@@ -1,5 +1,6 @@
 import os
 import configparser
+from configparser import _UNSET  # type: ignore[attr-defined]
 import logging
 
 
@@ -100,8 +101,11 @@ class Config:
 
             self.is_configured = config_file_path is not None
 
-        def getlist(self, category, key, fallback=[]):
-            list_string = self.get(category, key, fallback=",".join(fallback))
+        def getlist(self, category, key, fallback=_UNSET):
+            if fallback is _UNSET:
+                list_string = self.get(category, key)
+            else:
+                list_string = self.get(category, key, fallback=",".join(fallback))
             if list_string:
                 return [s.strip() for s in list_string.split(",")]
             else:
