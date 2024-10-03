@@ -77,7 +77,7 @@ class Tarball:
         try:
             repo = Repo(mod.__path__[0], search_parent_directories=True)
             return repo
-        except InvalidGitRepositoryError:
+        except (OSError, InvalidGitRepositoryError):
             return
 
     @staticmethod
