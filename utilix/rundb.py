@@ -69,7 +69,7 @@ class Token:
                     raise RuntimeError(
                         f"Cannot open {path}, "
                         "please report to https://github.com/XENONnT/utilix/issues. "
-                        f'To continue do "rm {path}" and restart notebook/utilix.'
+                        f"To continue do 'rm {path}' and restart notebook/utilix."
                     ) from e
                 self.token_string = json_in["string"]
                 self.creation_time = json_in["creation_time"]
@@ -102,7 +102,11 @@ class Token:
         return self.token_string
 
     def new_token(self):
-        path = PREFIX + "/login"
+        tk_rundb_api_url = uconfig.get("RunDB", "tk_rundb_api_url", fallback=None)
+        if tk_rundb_api_url:
+            paths = [tk_rundb_api_url + "/login", PREFIX + "/login"]
+        else:
+            paths = [PREFIX + "/login"]
         username = uconfig.get("RunDB", "rundb_api_user")
         pw = uconfig.get("RunDB", "rundb_api_password")
         data = json.dumps({"username": username, "password": pw})
@@ -112,10 +116,13 @@ class Token:
         success = False
         for _try in range(n_try):
             try:
-                response = requests.post(path, data=data, headers=BASE_HEADERS)
-                response_json = json.loads(response.text)
-                success = True
-                break
+                for path in paths:
+                    response = requests.post(path, data=data, headers=BASE_HEADERS)
+                    response_json = json.loads(response.text)
+                    success = True
+                    break
+                if success:
+                    break
             except json.decoder.JSONDecodeError:
                 logger.info(
                     f"Login attempt #{_try+1} failed. "
