@@ -33,34 +33,34 @@ from .rundb import xent_collection, DB
 
 
 class GridFsBase:
-    """
-    Base class to upload/download the files to a database using GridFS.
+    """Base class to upload/download the files to a database using GridFS.
+
     It is subclassed by a PyMongo version as well as one that goes through the runDB API
+
     """
 
-    def __init__(self, config_identifier='config_name', **kwargs):
+    def __init__(self, config_identifier="config_name", **kwargs):
         # This is the identifier under which we store the files.
         self.config_identifier = config_identifier
 
     def get_query_config(self, config):
-        """
-        Generate identifier to query against. This is just the configs
-        name.
+        """Generate identifier to query against. This is just the configs name.
 
-        :param config: str,  name of the file of interest
+        :param config: str, name of the file of interest
         :return: dict, that can be used in queries
+
         """
         return {self.config_identifier: config}
 
     def document_format(self, config):
-        """
-        Format of the document to upload
+        """Format of the document to upload.
 
-        :param config: str,  name of the file of interest
+        :param config: str, name of the file of interest
         :return: dict, that will be used to add the document
+
         """
         doc = self.get_query_config(config)
-        doc.update({'added': datetime.utcnow()})
+        doc.update({"added": datetime.utcnow()})
         return doc
 
     def config_exists(self, config):
@@ -101,7 +101,7 @@ class GridFsBase:
 
 
 class GridFsUploadBase:
-    """Base class for uploads"""
+    """Base class for uploads."""
 
     def upload_single(self, config, abs_path):
         raise NotImplementedError
@@ -111,49 +111,43 @@ class GridFsUploadBase:
 
 
 class GridFsDownloadBase:
-    """Base class for downloads"""
+    """Base class for downloads."""
 
     def __init__(self, store_files_at=None):
         # We are going to set a place where to store the files. It's
         # either specified by the user or we use these defaults:
         if store_files_at is None:
-            store_files_at = ('./resource_cache',
-                              )
+            store_files_at = ("./resource_cache",)
         elif not isinstance(store_files_at, (tuple, str, list)):
-            raise ValueError(f'{store_files_at} should be tuple of paths!')
+            raise ValueError(f"{store_files_at} should be tuple of paths!")
         elif isinstance(store_files_at, str):
             store_files_at = to_str_tuple(store_files_at)
 
         self.storage_options = store_files_at
 
-    def download_single(self,
-                        config_name: str,
-                        write_to=None,
-                        human_readable_file_name=False):
+    def download_single(self, config_name: str, write_to=None, human_readable_file_name=False):
         raise NotImplementedError
 
     def download_all(self):
-        """Download all the files that are stored in the mongo collection"""
-        raise NotImplementedError('This feature is disabled for now')
+        """Download all the files that are stored in the mongo collection."""
+        raise NotImplementedError("This feature is disabled for now")
         # Disable the inspection of `Unreachable code`
         # pylint: disable=unreachable
-        #for config in self.list_files():
-        #    self.download_single(config)
+        # for config in self.list_files():
+        #     self.download_single(config)
 
     @staticmethod
     def _check_store_files_at(cache_folder_alternatives):
-        """
-        Iterate over the options in cache_options until we find a folder
-            where we can store data. Order does matter as we iterate
-            until we find one folder that is willing.
+        """Iterate over the options in cache_options until we find a folder where we can store data.
+        Order does matter as we iterate until we find one folder that is willing.
 
-        :param cache_folder_alternatives: tuple, this tuple must be a
-            list of paths one can try to store the downloaded data
-
+        :param cache_folder_alternatives: tuple, this tuple must be a list of paths one can try to
+            store the downloaded data.
         :return: str, the folder that we can write to.
+
         """
         if not isinstance(cache_folder_alternatives, (tuple, list)):
-            raise ValueError('cache_folder_alternatives must be tuple')
+            raise ValueError("cache_folder_alternatives must be tuple")
         for folder in cache_folder_alternatives:
             if not os.path.exists(folder):
                 try:
@@ -163,8 +157,8 @@ class GridFsDownloadBase:
             if os.access(folder, os.W_OK):
                 return folder
         raise PermissionError(
-            f'Cannot write to any of the cache_folder_alternatives: '
-            f'{cache_folder_alternatives}')
+            f"Cannot write to any of the cache_folder_alternatives: " f"{cache_folder_alternatives}"
+        )
 
 
 class GridFsInterfaceMongo(GridFsBase):
@@ -178,14 +172,14 @@ class GridFsInterfaceMongo(GridFsBase):
 
     """
 
-    def __init__(self,
-                 readonly=True,
-                 file_database='files',
-                 config_identifier='config_name',
-                 collection=None,
-                 ):
-        """
-        GridFs-Mongo Interface
+    def __init__(
+        self,
+        readonly=True,
+        file_database="files",
+        config_identifier="config_name",
+        collection=None,
+    ):
+        """GridFs-Mongo Interface.
 
         :param readonly: bool, can one read or also write to the
             database.
@@ -197,14 +191,15 @@ class GridFsInterfaceMongo(GridFsBase):
             PyMongo DataName Collection to bypass normal initiation
             using utilix. Should be an object of the form:
                 pymongo.MongoClient(..).DATABASE_NAME.COLLECTION_NAME
+
         """
         super().__init__(config_identifier=config_identifier)
         if collection is None:
             if not readonly:
                 # We want admin access to start writing data!
-                mongo_url = uconfig.get('rundb_admin', 'mongo_rdb_url')
-                mongo_user = uconfig.get('rundb_admin', 'mongo_rdb_username')
-                mongo_password = uconfig.get('rundb_admin', 'mongo_rdb_password')
+                mongo_url = uconfig.get("rundb_admin", "mongo_rdb_url")
+                mongo_user = uconfig.get("rundb_admin", "mongo_rdb_username")
+                mongo_password = uconfig.get("rundb_admin", "mongo_rdb_password")
             else:
                 # We can safely use the Utilix defaults
                 mongo_url = mongo_user = mongo_password = None
@@ -213,18 +208,18 @@ class GridFsInterfaceMongo(GridFsBase):
             # collection, see for more details:
             # https://github.com/XENONnT/utilix/blob/master/utilix/rundb.py
             mongo_kwargs = {
-                'url': mongo_url,
-                'user': mongo_user,
-                'password': mongo_password,
-                'database': file_database,
+                "url": mongo_url,
+                "user": mongo_user,
+                "password": mongo_password,
+                "database": file_database,
             }
             # We can safely hard-code the collection as that is always
             # the same with GridFS.
-            collection = xent_collection(collection='fs.files', **mongo_kwargs)
+            collection = xent_collection(collection="fs.files", **mongo_kwargs)
         else:
             # Check the user input is fine for what we want to do.
             if not isinstance(collection, pymongo_collection):
-                raise ValueError('Provide PyMongo collection (see docstring)!')
+                raise ValueError("Provide PyMongo collection (see docstring)!")
             assert file_database is None, "Already provided a collection!"
 
         # Set collection and make sure it can at least do a 'find' operation
@@ -235,11 +230,11 @@ class GridFsInterfaceMongo(GridFsBase):
         self.grid_fs = gridfs.GridFS(collection.database)
 
     def config_exists(self, config):
-        """
-        Quick check if this config is already saved in the collection
+        """Quick check if this config is already saved in the collection.
 
-        :param config: str,  name of the file of interest
+        :param config: str, name of the file of interest
         :return: bool, is this config name stored in the database
+
         """
         query = self.get_query_config(config)
         return self.collection.count_documents(query) > 0
@@ -258,60 +253,53 @@ class GridFsInterfaceMongo(GridFsBase):
         if not os.path.exists(abs_path):
             # A file that does not exist does not have the same MD5
             return False
-        query = {'md5': self.compute_md5(abs_path)}
+        query = {"md5": self.compute_md5(abs_path)}
         return self.collection.count_documents(query) > 0
 
     def test_find(self):
-        """
-        Test the connection to the self.collection to see if we can
-        perform a collection.find operation.
-        """
+        """Test the connection to the self.collection to see if we can perform a collection.find
+        operation."""
         if self.collection.find_one(projection="_id") is None:
-            raise ConnectionError('Could not find any data in this collection')
+            raise ConnectionError("Could not find any data in this collection")
 
     def list_files(self):
-        """
-        Get a complete list of files that are stored in the database
+        """Get a complete list of files that are stored in the database.
 
-        :return: list, list of the names of the items stored in this
-            database
+        :return: list, list of the names of the items stored in this database
 
         """
-        return [doc[self.config_identifier]
-                for doc in
-                self.collection.find(
-                    projection=
-                    {self.config_identifier: 1})
-                if self.config_identifier in doc
-                ]
+        return [
+            doc[self.config_identifier]
+            for doc in self.collection.find(projection={self.config_identifier: 1})
+            if self.config_identifier in doc
+        ]
 
 
 class MongoUploader(GridFsInterfaceMongo, GridFsUploadBase):
-    """
-    Class to upload files to GridFs
-    """
+    """Class to upload files to GridFs."""
 
     def __init__(self, readonly=False, *args, **kwargs):
         # Same as parent. Just check the readonly_argument
         if readonly:
-            raise PermissionError(
-                "How can you upload if you want to operate in readonly?")
+            raise PermissionError("How can you upload if you want to operate in readonly?")
         GridFsInterfaceMongo.__init__(self, *args, readonly=readonly, **kwargs)
 
     def upload_from_dict(self, file_path_dict):
-        """
-        Upload all files in the dictionary to the database.
+        """Upload all files in the dictionary to the database.
 
         :param file_path_dict: dict, dictionary of paths to upload. The
             dict should be of the format:
             file_path_dict = {'config_name':  '/the_config_path', ...}
 
         :return: None
+
         """
         if not isinstance(file_path_dict, dict):
-            raise ValueError(f'file_path_dict must be dict of form '
-                             f'"dict(NAME=ABSOLUTE_PATH,...)". Got '
-                             f'{type(file_path_dict)} instead')
+            raise ValueError(
+                f"file_path_dict must be dict of form "
+                f'"dict(NAME=ABSOLUTE_PATH,...)". Got '
+                f"{type(file_path_dict)} instead"
+            )
 
         for config, abs_path in tqdm(file_path_dict.items()):
             # We need to do this expensive check here. It is not enough
@@ -329,38 +317,36 @@ class MongoUploader(GridFsInterfaceMongo, GridFsUploadBase):
                     self.upload_single(config, abs_path)
                 except (CouldNotLoadError, ConfigTooLargeError):
                     # Perhaps we should fail then?
-                    warn(f'Cannot upload {config}')
+                    warn(f"Cannot upload {config}")
 
     def upload_single(self, config, abs_path):
-        """
-        Upload a single file to gridfs
+        """Upload a single file to gridfs.
 
-        :param config: str, the name under which this file should be
-            stored
-
+        :param config: str, the name under which this file should be stored
         :param abs_path: str, the absolute path of the file
+
         """
         doc = self.document_format(config)
-        doc['md5'] = self.compute_md5(abs_path)
+        doc["md5"] = self.compute_md5(abs_path)
         if not os.path.exists(abs_path):
-            raise CouldNotLoadError(f'{abs_path} does not exits')
+            raise CouldNotLoadError(f"{abs_path} does not exits")
 
-        print(f'uploading {config}')
-        with open(abs_path, 'rb') as file:
+        print(f"uploading {config}")
+        with open(abs_path, "rb") as file:
             self.grid_fs.put(file, **doc)
 
 
 class MongoDownloader(GridFsInterfaceMongo, GridFsDownloadBase):
-    """
-    Class to download files from GridFs
-    """
+    """Class to download files from GridFs."""
 
     def __init__(self, *args, **kwargs):
         GridFsDownloadBase.__init__(self, *args)
         GridFsInterfaceMongo.__init__(self, **kwargs)
 
-    def get_gridfs_object(self,
-                          config_name: str,):
+    def get_gridfs_object(
+        self,
+        config_name: str,
+    ):
         if self.config_exists(config_name):
             # Query by name
             query = self.get_query_config(config_name)
@@ -370,33 +356,25 @@ class MongoDownloader(GridFsInterfaceMongo, GridFsDownloadBase):
                 fs_object = self.grid_fs.get_last_version(**query)
                 return fs_object
             except gridfs.NoFile as e:
-                raise CouldNotLoadError(
-                    f'{config_name} cannot be downloaded from GridFs') from e
+                raise CouldNotLoadError(f"{config_name} cannot be downloaded from GridFs") from e
         else:
-            raise ValueError(f'Config {config_name} cannot be downloaded '
-                             f'since it is not stored')
+            raise ValueError(
+                f"Config {config_name} cannot be downloaded " f"since it is not stored"
+            )
 
     def open_response(self, fs_object):
-        """
-        Open the fs_object for writing to file
-        """
+        """Open the fs_object for writing to file."""
         return fs_object.read()
 
-    def download_single(self,
-                        config_name: str,
-                        write_to=None,
-                        human_readable_file_name=False):
-        """
-        Download the config_name if it exists
+    def download_single(self, config_name: str, write_to=None, human_readable_file_name=False):
+        """Download the config_name if it exists.
 
         :param config_name: str, the name under which the file is stored
-
-        :param human_readable_file_name: bool, store the file also under
-            it's human readable name. It is better not to use this as
-            the user might not know if the version of the file is the
-            latest.
-
+        :param human_readable_file_name: bool, store the file also under it's human readable name.
+            It is better not to use this as the user might not know if the version of the file is
+            the latest.
         :return: str, the absolute path of the file requested
+
         """
         fs_object = self.get_gridfs_object(config_name)
         # Ok, so we can open it. We will store the file under it's
@@ -428,9 +406,9 @@ class MongoDownloader(GridFsInterfaceMongo, GridFsDownloadBase):
         with tempfile.TemporaryDirectory() as temp_directory_name:
             temp_path = os.path.join(temp_directory_name, target_file_name)
 
-            with open(temp_path, 'wb') as stored_file:
+            with open(temp_path, "wb") as stored_file:
                 # This is were we do the actual downloading!
-                warn(f'Downloading {config_name} to {destination_path}')
+                warn(f"Downloading {config_name} to {destination_path}")
                 stored_file.write(self.open_response(fs_object))
 
             if not os.path.exists(destination_path):
@@ -443,19 +421,19 @@ class MongoDownloader(GridFsInterfaceMongo, GridFsDownloadBase):
 
 
 class GridFsInterfaceAPI(GridFsBase):
-    """Interface to gridfs using the runDB API"""
+    """Interface to gridfs using the runDB API."""
 
-    def __init__(self, config_identifier='config_name'):
+    def __init__(self, config_identifier="config_name"):
         super().__init__(config_identifier=config_identifier)
         # all the credentials logic is handled by the utilix config, so don't need lengthy setup
         self.db = DB()
 
     def config_exists(self, config):
-        """
-        Quick check if this config is already saved in the collection
+        """Quick check if this config is already saved in the collection.
 
-        :param config: str,  name of the file of interest
+        :param config: str, name of the file of interest
         :return: bool, is this config name stored in the database
+
         """
         query = self.get_query_config(config)
         return self.db.count_files(query) > 0
@@ -474,56 +452,46 @@ class GridFsInterfaceAPI(GridFsBase):
         if not os.path.exists(abs_path):
             # A file that does not exist does not have the same MD5
             return False
-        query = {'md5': self.compute_md5(abs_path)}
+        query = {"md5": self.compute_md5(abs_path)}
         return self.db.count_files(query) > 0
 
     def test_find(self):
-        """
-        Test the connection to the self.collection to see if we can
-        perform a collection.find operation.
-        """
-        if self.db.get_files({}, projection={'_id': 1}) is None:
-            raise ConnectionError('Could not find any data in this collection')
+        """Test the connection to the self.collection to see if we can perform a collection.find
+        operation."""
+        if self.db.get_files({}, projection={"_id": 1}) is None:
+            raise ConnectionError("Could not find any data in this collection")
 
     def list_files(self):
-        """
-        Get a complete list of files that are stored in the database.
+        """Get a complete list of files that are stored in the database.
 
         Note that the config_identifier attribute is used to filter the results.
 
-        :return: list, list of the names of the items stored in this
-            database
+        :return: list, list of the names of the items stored in this database
 
         """
-        return [doc[self.config_identifier]
-                for doc in self.db.get_files({}, projection={self.config_identifier: 1})
-                if self.config_identifier in doc
-                ]
+        return [
+            doc[self.config_identifier]
+            for doc in self.db.get_files({}, projection={self.config_identifier: 1})
+            if self.config_identifier in doc
+        ]
 
 
 class APIDownloader(GridFsInterfaceAPI, GridFsDownloadBase):
-    """Download files using the runDB API"""
+    """Download files using the runDB API."""
 
-    def __init__(self, config_identifier='config_name', store_files_at=None):
+    def __init__(self, config_identifier="config_name", store_files_at=None):
         GridFsDownloadBase.__init__(self, store_files_at=store_files_at)
         GridFsInterfaceAPI.__init__(self, config_identifier=config_identifier)
 
-
-    def download_single(self,
-                        config_name: str,
-                        write_to=None,
-                        human_readable_file_name=False):
-        """
-        Download the config_name if it exists
+    def download_single(self, config_name: str, write_to=None, human_readable_file_name=False):
+        """Download the config_name if it exists.
 
         :param config_name: str, the name under which the file is stored
-
-        :param human_readable_file_name: bool, store the file also under
-            it's human readable name. It is better not to use this as
-            the user might not know if the version of the file is the
-            latest.
-
+        :param human_readable_file_name: bool, store the file also under it's human readable name.
+            It is better not to use this as the user might not know if the version of the file is
+            the latest.
         :return: str, the absolute path of the file requested
+
         """
 
         if human_readable_file_name:
@@ -560,45 +528,43 @@ class APIDownloader(GridFsInterfaceAPI, GridFsDownloadBase):
 
 
 class APIUploader(GridFsInterfaceAPI, GridFsUploadBase):
-    """Upload files to gridfs using the runDB API"""
-    def __init__(self, config_identifier='config_name'):
+    """Upload files to gridfs using the runDB API."""
+
+    def __init__(self, config_identifier="config_name"):
         GridFsInterfaceAPI.__init__(self, config_identifier=config_identifier)
 
     def upload_single(self, config, abs_path):
-        """
-        Upload a single file to gridfs
+        """Upload a single file to gridfs.
 
-        :param config: str, the name under which this file should be
-            stored
-
+        :param config: str, the name under which this file should be stored
         :param abs_path: str, the absolute path of the file
+
         """
         if not os.path.exists(abs_path):
-            raise CouldNotLoadError(f'{abs_path} does not exist')
+            raise CouldNotLoadError(f"{abs_path} does not exist")
 
-        logger.info(f'uploading file {config} from {abs_path}')
+        logger.info(f"uploading file {config} from {abs_path}")
         self.db.upload_file(abs_path, config)
 
 
 class CouldNotLoadError(Exception):
-    """Raise if we cannot load this kind of data"""
+    """Raise if we cannot load this kind of data."""
+
     # Disable the inspection of 'Unnecessary pass statement'
     # pylint: disable=unnecessary-pass
     pass
 
 
 class ConfigTooLargeError(Exception):
-    """Raise if the data is to large to be uploaded into mongo"""
+    """Raise if the data is to large to be uploaded into mongo."""
+
     # Disable the inspection of 'Unnecessary pass statement'
     # pylint: disable=unnecessary-pass
     pass
 
 
 def to_str_tuple(x) -> ty.Tuple[str]:
-    """
-    Convert x to tuple of string
-    Stolen from strax
-    """
+    """Convert x to tuple of string Stolen from strax."""
     if isinstance(x, str):
         return (x,)
     elif isinstance(x, list):

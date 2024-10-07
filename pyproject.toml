@@ -1,0 +1,48 @@
+[tool]
+[tool.poetry]
+name = "utilix"
+version = "0.9.1"
+description = "User-friendly interface to various utilities for XENON users"
+readme = "README.md"
+authors = [
+  "utilix developers",
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "License :: OSI Approved :: BSD License",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+repository = "https://github.com/XENONnT/utilix"
+packages = [
+    { include = "utilix" }
+]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.13"
+pymongo = "*"
+requests = "*"
+tqdm = "*"
+pandas = "*"
+commentjson = "*"
+simple_slurm = "*"
+pydantic = ">=1.10,<2.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.8", "setuptools>=61.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+preview = true
+
+[tool.docformatter]
+recursive = true
+in-place = true
+wrap-summaries = 100
+wrap-descriptions = 100
+blank = true

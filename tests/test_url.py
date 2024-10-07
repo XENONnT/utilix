@@ -4,14 +4,14 @@ import pymongo
 uconfig = utilix.uconfig
 
 
-def test_mongo_urls_without_secondary_preferred(collection='runs', raise_errors=True, **kwargs):
-    """Test that we can do a naive initiation of the rundb"""
+def test_mongo_urls_without_secondary_preferred(collection="runs", raise_errors=True, **kwargs):
+    """Test that we can do a naive initiation of the rundb."""
     # Get the url for the config
-    uri = 'mongodb://{user}:{pw}@{url}'
-    url = uconfig.get('RunDB', 'pymongo_url')
-    user = uconfig.get('RunDB', 'pymongo_user')
-    pw = uconfig.get('RunDB', 'pymongo_password')
-    database = uconfig.get('RunDB', 'pymongo_database')
+    uri = "mongodb://{user}:{pw}@{url}"
+    url = uconfig.get("RunDB", "pymongo_url")
+    user = uconfig.get("RunDB", "pymongo_user")
+    pw = uconfig.get("RunDB", "pymongo_password")
+    database = uconfig.get("RunDB", "pymongo_database")
     uri = uri.format(user=user, pw=pw, url=url)
 
     # Do a naive client initialization
@@ -30,7 +30,8 @@ def test_mongo_urls_without_secondary_preferred(collection='runs', raise_errors=
 
 
 def test_mongo_urls_secondary_preferred():
-    """Do it the right way, use secondary preferred"""
+    """Do it the right way, use secondary preferred."""
     # Raise errors if this fails because then we have a big problem!
     test_mongo_urls_without_secondary_preferred(
-        **dict(readPreference='secondaryPreferred'), raise_errors=True)
+        **dict(readPreference="secondaryPreferred"), raise_errors=True
+    )

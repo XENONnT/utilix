@@ -57,6 +57,7 @@ def get_partition_and_qos(server):
     else:
         raise ValueError(f"Unknown server: {server}")
 
+
 PARTITIONS = get_partition_and_qos(SERVER)
 
 
@@ -71,7 +72,6 @@ def valid_job_submission() -> JobSubmission:
         container="xenonnt-development.simg",
     )
 
-import pytest
 
 @pytest.mark.parametrize("partition", PARTITIONS)
 def test_job_submission_submit_all_partitions(partition):
@@ -102,6 +102,7 @@ def test_job_submission_submit_all_partitions(partition):
         )
         mock_slurm.add_cmd.assert_called_once()
         mock_slurm.sbatch.assert_called_once_with(shell="/bin/bash")
+
 
 @pytest.mark.parametrize("partition", PARTITIONS)
 def test_submit_job_function_all_partitions(partition):
@@ -142,6 +143,7 @@ def test_submit_job_function_all_partitions(partition):
         )
         mock_job_submission.submit.assert_called_once()
 
+
 def test_valid_jobstring(valid_job_submission: JobSubmission):
     """Test case to check if a valid jobstring is accepted."""
     assert valid_job_submission.jobstring == "Hello World"
@@ -153,9 +155,8 @@ def test_valid_container(valid_job_submission: JobSubmission):
 
 
 def test_container_exists(valid_job_submission: JobSubmission, tmp_path: str):
-    """
-    Test case to check if the appropriate validation error is raised when the specified container does not exist.
-    """
+    """Test case to check if the appropriate validation error is raised when the specified container
+    does not exist."""
     invalid_container = "nonexistent-container.simg"
     with patch.object(batchq, "SINGULARITY_DIR", "/lgrandi/xenonnt/singularity-images"):
         with pytest.raises(FileNotFoundError) as exc_info:
@@ -167,16 +168,18 @@ def test_container_exists(valid_job_submission: JobSubmission, tmp_path: str):
 
 
 def test_invalid_container(valid_job_submission: JobSubmission):
-    """Test case to check if the appropriate validation error is raised when an invalid value is provided for the container field."""
+    """Test case to check if the appropriate validation error is raised when an invalid value is
+    provided for the container field."""
     job_submission_data = valid_job_submission.dict().copy()
     job_submission_data["container"] = "invalid.txt"
     with pytest.raises(FormatError) as exc_info:
-        job_submission = JobSubmission(**job_submission_data)
+        JobSubmission(**job_submission_data)
     assert "Container must end with .simg" in str(exc_info.value)
 
 
 def test_invalid_qos(valid_job_submission: JobSubmission):
-    """Test case to check if the appropriate validation error is raised when an invalid value is provided for the qos field."""
+    """Test case to check if the appropriate validation error is raised when an invalid value is
+    provided for the qos field."""
     job_submission_data = valid_job_submission.dict().copy()
     job_submission_data["qos"] = "invalid_qos"
     with pytest.raises(QOSNotFoundError) as exc_info:
@@ -190,7 +193,8 @@ def test_valid_qos(valid_job_submission: JobSubmission):
 
 
 def test_invalid_bind(valid_job_submission: JobSubmission, caplog):
-    """Test case to check if the appropriate validation error is raised when an invalid value is provided for the bind field."""
+    """Test case to check if the appropriate validation error is raised when an invalid value is
+    provided for the bind field."""
     job_submission_data = valid_job_submission.dict().copy()
     invalid_bind = "/project999"
     job_submission_data["bind"].append(invalid_bind)
@@ -202,7 +206,8 @@ def test_invalid_bind(valid_job_submission: JobSubmission, caplog):
 
 
 def test_invalid_hours(valid_job_submission: JobSubmission):
-    """Test case to check if the appropriate validation error is raised when an invalid value is provided for the hours field."""
+    """Test case to check if the appropriate validation error is raised when an invalid value is
+    provided for the hours field."""
     job_submission_data = valid_job_submission.dict().copy()
     job_submission_data["hours"] = 1000
     with pytest.raises(ValidationError) as exc_info:
@@ -216,9 +221,8 @@ def test_valid_hours(valid_job_submission: JobSubmission):
 
 
 def test_bypass_validation_qos(valid_job_submission: JobSubmission):
-    """
-    Test case to check if the validation for the qos field is skipped when it is included in the bypass_validation list.
-    """
+    """Test case to check if the validation for the qos field is skipped when it is included in the
+    bypass_validation list."""
     job_submission_data = valid_job_submission.dict().copy()
     job_submission_data["qos"] = "invalid_qos"
     job_submission_data["bypass_validation"] = ["qos"] + job_submission_data.get(
@@ -229,9 +233,8 @@ def test_bypass_validation_qos(valid_job_submission: JobSubmission):
 
 
 def test_bypass_validation_hours(valid_job_submission: JobSubmission):
-    """
-    Test case to check if the validation for the hours field is skipped when it is included in the bypass_validation list.
-    """
+    """Test case to check if the validation for the hours field is skipped when it is included in
+    the bypass_validation list."""
     job_submission_data = valid_job_submission.dict().copy()
     job_submission_data["hours"] = 100
     job_submission_data["bypass_validation"] = ["hours"] + job_submission_data.get(
@@ -242,9 +245,8 @@ def test_bypass_validation_hours(valid_job_submission: JobSubmission):
 
 
 def test_bypass_validation_container(valid_job_submission: JobSubmission):
-    """
-    Test case to check if the validation for the container field is skipped when it is included in the bypass_validation list.
-    """
+    """Test case to check if the validation for the container field is skipped when it is included
+    in the bypass_validation list."""
     job_submission_data = valid_job_submission.dict().copy()
     job_submission_data["container"] = "invalid.ext"
     job_submission_data["bypass_validation"] = ["container"] + job_submission_data.get(
@@ -255,9 +257,8 @@ def test_bypass_validation_container(valid_job_submission: JobSubmission):
 
 
 def test_bypass_validation_multiple_fields(valid_job_submission: JobSubmission):
-    """
-    Test case to check if the validation for multiple fields is skipped when they are included in the bypass_validation list.
-    """
+    """Test case to check if the validation for multiple fields is skipped when they are included in
+    the bypass_validation list."""
     job_submission_data = valid_job_submission.dict().copy()
     job_submission_data["qos"] = "invalid_qos"
     job_submission_data["hours"] = 100
@@ -286,5 +287,3 @@ def test_submit_job_arguments():
     assert (
         len(missing_params) == 0
     ), f"Missing parameters in submit_job: {', '.join(missing_params)}"
-
-    

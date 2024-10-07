@@ -14,7 +14,7 @@ on:
       - master
 
 jobs:
-  update:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Setup python
@@ -26,12 +26,14 @@ jobs:
       - name: Install python dependencies
         uses: py-actions/py-dependency-install@v2
       - name: Install utilix
-        run: python setup.py install
+        run: |
+          pip install pytest hypothesis coverage coveralls
+          pip install . --force-reinstall
       - name: Install pytest and hypothesis
         run: pip install pytest hypothesis flake8 pytest-cov
       - name: Test package
         # Could add more but perhaps we need to consider what we want to test first
         run: |
-         python -m unittest tests/test_import.py
+          python -m unittest tests/test_import.py
       - name: goodbye
         run: echo goodbye
