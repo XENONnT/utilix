@@ -23,7 +23,7 @@ import gridfs
 from tqdm import tqdm
 from shutil import move
 import hashlib
-from pymongo.collection import Collection as pymongo_collection
+from pymongo.collection import Collection
 import typing as ty
 import numpy as np
 import pandas as pd
@@ -218,7 +218,7 @@ class GridFsInterfaceMongo(GridFsBase):
             collection = xent_collection(collection="fs.files", **mongo_kwargs)
         else:
             # Check the user input is fine for what we want to do.
-            if not isinstance(collection, pymongo_collection):
+            if not isinstance(collection, Collection):
                 raise ValueError("Provide PyMongo collection (see docstring)!")
             assert file_database is None, "Already provided a collection!"
 
