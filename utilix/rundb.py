@@ -199,7 +199,6 @@ class DB:
         if not self._initialized[key]:
             self._instances[key].initialize(*args, **kwargs)
             self._initialized[key] = True
-        return
 
     def initialize(self, token_path=None):
         if token_path is None:
@@ -549,39 +548,6 @@ def test_collection(collection, url, raise_errors=False):
             raise PyMongoCannotConnect(message) from e
 
 
-def pymongo_collection(collection="runs", **kwargs):
-    # default collection is the XENONnT runsDB
-    # for 1T, pass collection='runs_new'
-    print(
-        "WARNING: pymongo_collection is deprecated. "
-        "Please use xent_collection or xe1t_collection instead."
-    )
-    uri = "mongodb://{user}:{pw}@{url}"
-    url = kwargs.get("url")
-    user = kwargs.get("user")
-    pw = kwargs.get("password")
-    database = kwargs.get("database")
-    read_preference = kwargs.get("read_preference", "secondary")
-
-    if not url:
-        url = uconfig.get("RunDB", "pymongo_url")
-    if not user:
-        user = uconfig.get("RunDB", "pymongo_user")
-    if not pw:
-        pw = uconfig.get("RunDB", "pymongo_password")
-    if not database:
-        database = uconfig.get("RunDB", "pymongo_database")
-    uri = uri.format(user=user, pw=pw, url=url)
-    c = pymongo.MongoClient(uri, readPreference=read_preference)
-    DB = c[database]
-    coll = DB[collection]
-    # Checkout the collection we are returning and raise errors if you want
-    # to be realy sure we can use this URL.
-    # test_collection(coll, url, raise_errors=False)
-
-    return coll
-
-
 MONGO_CLIENTS = dict()
 
 
@@ -656,11 +622,11 @@ def cleanup_datadict(ddict):
 
 def cmt_local_valid_range(collection_name, local_version):
     query = {local_version: {"$ne": float("nan")}}
-    collection = xent_collection(collection_name, database="corrections")
-    start = collection.find_one(query, {"time": 1}, sort=[("time", 1)])["time"]
-    end = collection.find_one(query, {"time": 1}, sort=[("time", -1)])["time"]
+    coll = xent_collection(collection_name, database="corrections")
+    start = coll.find_one(query, {"time": 1}, sort=[("time", 1)])["time"]
+    end = coll.find_one(query, {"time": 1}, sort=[("time", -1)])["time"]
     # if end is the last document in this collection, set it instead to 'end of time'
-    if end == collection.find_one({}, {"time": 1}, sort=[("time", -1)])["time"]:
+    if end == coll.find_one({}, {"time": 1}, sort=[("time", -1)])["time"]:
         end = datetime.datetime(2100, 1, 1)
     return start, end
 
