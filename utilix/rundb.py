@@ -69,7 +69,7 @@ class Token:
                     raise RuntimeError(
                         f"Cannot open {path}, "
                         "please report to https://github.com/XENONnT/utilix/issues. "
-                        f'To continue do "rm {path}" and restart notebook/utilix.'
+                        f"To continue do 'rm {path}' and restart notebook/utilix."
                     ) from e
                 self.token_string = json_in["string"]
                 self.creation_time = json_in["creation_time"]
@@ -102,7 +102,11 @@ class Token:
         return self.token_string
 
     def new_token(self):
-        path = PREFIX + "/login"
+        tk_rundb_api_url = uconfig.get("RunDB", "tk_rundb_api_url", fallback=None)
+        if tk_rundb_api_url:
+            paths = [tk_rundb_api_url + "/login", PREFIX + "/login"]
+        else:
+            paths = [PREFIX + "/login"]
         username = uconfig.get("RunDB", "rundb_api_user")
         pw = uconfig.get("RunDB", "rundb_api_password")
         data = json.dumps({"username": username, "password": pw})
@@ -112,10 +116,13 @@ class Token:
         success = False
         for _try in range(n_try):
             try:
-                response = requests.post(path, data=data, headers=BASE_HEADERS)
-                response_json = json.loads(response.text)
-                success = True
-                break
+                for path in paths:
+                    response = requests.post(path, data=data, headers=BASE_HEADERS)
+                    response_json = json.loads(response.text)
+                    success = True
+                    break
+                if success:
+                    break
             except json.decoder.JSONDecodeError:
                 logger.info(
                     f"Login attempt #{_try+1} failed. "
@@ -192,7 +199,6 @@ class DB:
         if not self._initialized[key]:
             self._instances[key].initialize(*args, **kwargs)
             self._initialized[key] = True
-        return
 
     def initialize(self, token_path=None):
         if token_path is None:
@@ -542,39 +548,6 @@ def test_collection(collection, url, raise_errors=False):
             raise PyMongoCannotConnect(message) from e
 
 
-def pymongo_collection(collection="runs", **kwargs):
-    # default collection is the XENONnT runsDB
-    # for 1T, pass collection='runs_new'
-    print(
-        "WARNING: pymongo_collection is deprecated. "
-        "Please use xent_collection or xe1t_collection instead."
-    )
-    uri = "mongodb://{user}:{pw}@{url}"
-    url = kwargs.get("url")
-    user = kwargs.get("user")
-    pw = kwargs.get("password")
-    database = kwargs.get("database")
-    read_preference = kwargs.get("read_preference", "secondary")
-
-    if not url:
-        url = uconfig.get("RunDB", "pymongo_url")
-    if not user:
-        user = uconfig.get("RunDB", "pymongo_user")
-    if not pw:
-        pw = uconfig.get("RunDB", "pymongo_password")
-    if not database:
-        database = uconfig.get("RunDB", "pymongo_database")
-    uri = uri.format(user=user, pw=pw, url=url)
-    c = pymongo.MongoClient(uri, readPreference=read_preference)
-    DB = c[database]
-    coll = DB[collection]
-    # Checkout the collection we are returning and raise errors if you want
-    # to be realy sure we can use this URL.
-    # test_collection(coll, url, raise_errors=False)
-
-    return coll
-
-
 MONGO_CLIENTS = dict()
 
 
@@ -649,11 +622,11 @@ def cleanup_datadict(ddict):
 
 def cmt_local_valid_range(collection_name, local_version):
     query = {local_version: {"$ne": float("nan")}}
-    collection = xent_collection(collection_name, database="corrections")
-    start = collection.find_one(query, {"time": 1}, sort=[("time", 1)])["time"]
-    end = collection.find_one(query, {"time": 1}, sort=[("time", -1)])["time"]
+    coll = xent_collection(collection_name, database="corrections")
+    start = coll.find_one(query, {"time": 1}, sort=[("time", 1)])["time"]
+    end = coll.find_one(query, {"time": 1}, sort=[("time", -1)])["time"]
     # if end is the last document in this collection, set it instead to 'end of time'
-    if end == collection.find_one({}, {"time": 1}, sort=[("time", -1)])["time"]:
+    if end == coll.find_one({}, {"time": 1}, sort=[("time", -1)])["time"]:
         end = datetime.datetime(2100, 1, 1)
     return start, end
 
