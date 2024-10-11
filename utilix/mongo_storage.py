@@ -13,6 +13,7 @@ from utilix.rundb import DB, xent_collection
 from utilix.utils import to_str_tuple
 from utilix import uconfig, logger
 
+
 class GridFsBase:
     """Base class for GridFS operations."""
 

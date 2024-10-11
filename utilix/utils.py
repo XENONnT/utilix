@@ -2,6 +2,7 @@ from typing import Tuple, Any
 import numpy as np
 import pandas as pd
 
+
 def to_str_tuple(x) -> Tuple[Any, ...]:
     if isinstance(x, (str, bytes)):
         return (x,)
