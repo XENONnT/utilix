@@ -14,3 +14,4 @@ else:
 
 from .shell import Shell
 from .rundb import DB, xent_collection, xe1t_collection
+from . import mongo_storage
