@@ -1,7 +1,7 @@
 [tool]
 [tool.poetry]
 name = "utilix"
-version = "0.10.1"
+version = "0.11.0"
 description = "User-friendly interface to various utilities for XENON users"
 readme = "README.md"
 authors = [
