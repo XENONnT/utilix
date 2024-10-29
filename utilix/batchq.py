@@ -17,10 +17,11 @@ if USER is None:
 SCRATCH_DIR: str = os.environ.get("SCRATCH", ".")
 # SCRATCH_DIR must have write permission
 if not os.access(SCRATCH_DIR, os.W_OK):
-    raise ValueError(
-        f"SCRATCH_DIR {SCRATCH_DIR} does not have write permission. "
-        "You may need to set SCRATCH_DIR manually in your .bashrc or .bash_profile."
-    )
+    if 'dali' not in os.environ.get("HOSTNAME"):
+        raise ValueError(
+            f"SCRATCH_DIR {SCRATCH_DIR} does not have write permission. "
+            "You may need to set SCRATCH_DIR manually in your .bashrc or .bash_profile."
+        )
 
 PARTITIONS: List[str] = [
     "dali",
