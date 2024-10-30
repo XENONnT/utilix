@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, validator
 from simple_slurm import Slurm  # type: ignore
 from . import logger
 
+
 # Get the SERVER type
 def get_server_type():
     hostname = os.uname().nodename
@@ -23,7 +24,8 @@ def get_server_type():
         raise ValueError(
             f"Unknown server type for hostname {hostname}. Please use midway2, midway3, or dali."
         )
-        
+
+
 SERVER = get_server_type()
 
 USER: Optional[str] = os.environ.get("USER")
@@ -33,10 +35,10 @@ if USER is None:
 SCRATCH_DIR: str = os.environ.get("SCRATCH", ".")
 # for non-dali hosts, SCRATCH_DIR must have write permission
 if not os.access(SCRATCH_DIR, os.W_OK) and SERVER != "Dali":
-        raise ValueError(
-            f"SCRATCH_DIR {SCRATCH_DIR} does not have write permission. "
-            "You may need to set SCRATCH_DIR manually in your .bashrc or .bash_profile."
-        )
+    raise ValueError(
+        f"SCRATCH_DIR {SCRATCH_DIR} does not have write permission. "
+        "You may need to set SCRATCH_DIR manually in your .bashrc or .bash_profile."
+    )
 
 PARTITIONS: List[str] = [
     "dali",
