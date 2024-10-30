@@ -3,7 +3,6 @@ from utilix import batchq
 from utilix.batchq import JobSubmission, QOSNotFoundError, FormatError, submit_job
 from utilix.batchq import SERVER
 import pytest
-import os
 from unittest.mock import patch, MagicMock
 import datetime
 import inspect
