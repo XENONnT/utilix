@@ -65,3 +65,5 @@ def load_runlist(runlist_path):
             for line in f.readlines():
                 ret.append(int(line.rstrip()))
         return ret
+    else:
+        raise ValueError(f"Unsupported format {fmt}!")
