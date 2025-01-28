@@ -270,7 +270,6 @@ def test_submit_job_arguments():
         len(missing_params) == 0
     ), f"Missing parameters in submit_job: {', '.join(missing_params)}"
 
-@pytest.mark.integration
 def test_real_job_submission(capsys):  # capsys is a pytest fixture to capture stdout/stderr
     """Test submitting an actual job to the cluster"""
     job_submission = JobSubmission(
