@@ -21,8 +21,8 @@ def get_partition_and_qos(server):
         ]
     elif server == "Midway3":
         return [
-            "kicp",
             "lgrandi",
+            "kicp",
             "caslake",
             "build",
         ]
@@ -269,3 +269,26 @@ def test_submit_job_arguments():
     assert (
         len(missing_params) == 0
     ), f"Missing parameters in submit_job: {', '.join(missing_params)}"
+
+@pytest.mark.integration
+def test_real_job_submission(capsys):  # capsys is a pytest fixture to capture stdout/stderr
+    """Test submitting an actual job to the cluster"""
+    job_submission = JobSubmission(
+        jobstring="echo 'test' && sleep 10",
+        partition=PARTITIONS[0],
+        qos=PARTITIONS[0],
+        hours=1,
+        container="xenonnt-development.simg"
+    )
+    
+    job_submission.submit()
+    
+    # Capture the output
+    captured = capsys.readouterr()
+    # Check if the job was submitted successfully
+    assert "Job submitted successfully. Job ID:" in captured.out
+    
+    # Optional: Extract and verify the job ID is a number
+    job_id_line = [line for line in captured.out.split('\n') if "Job submitted successfully" in line][0]
+    job_id = job_id_line.split("Job ID:")[1].strip()
+    assert job_id.isdigit(), f"Expected numeric job ID, got: {job_id}"
