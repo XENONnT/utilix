@@ -390,8 +390,8 @@ class JobSubmission(BaseModel):
             f"echo running on $SLURMD_NODENAME\n"
             f"unset X509_CERT_DIR\n"
             f'if [ "$INSTALL_CUTAX" == "1" ]; then unset CUTAX_LOCATION; fi\n'
-            f"module load singularity\n"
-            f"singularity exec {bind_string} {self.container} {exec_file}\n"
+            f"module load apptainer\n"
+            f"apptainer exec {bind_string} {self.container} {exec_file}\n"
             f"exit_code=$?\n"
             f"rm {exec_file}\n"
             f"if [ $exit_code -ne 0 ]; then\n"
