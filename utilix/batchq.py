@@ -27,6 +27,10 @@ def get_server_type():
 
 
 SERVER = get_server_type()
+SINGULARITY_ALIAS = lambda SERVER: {"Midway2": "singularity",
+                                    "Midway3": "apptainer",
+                                    "Dali": "singularity",
+                                    }[SERVER]
 
 USER: Optional[str] = os.environ.get("USER")
 if USER is None:
@@ -390,8 +394,8 @@ class JobSubmission(BaseModel):
             f"echo running on $SLURMD_NODENAME\n"
             f"unset X509_CERT_DIR\n"
             f'if [ "$INSTALL_CUTAX" == "1" ]; then unset CUTAX_LOCATION; fi\n'
-            f"module load apptainer\n"
-            f"apptainer exec {bind_string} {self.container} {exec_file}\n"
+            f"module load {SINGULARITY_ALIAS}\n"
+            f"{SINGULARITY_ALIAS} exec {bind_string} {self.container} {exec_file}\n"
             f"exit_code=$?\n"
             f"rm {exec_file}\n"
             f"if [ $exit_code -ne 0 ]; then\n"
