@@ -1,30 +1,12 @@
 from pydantic import ValidationError
 from utilix import batchq
 from utilix.batchq import JobSubmission, QOSNotFoundError, FormatError, submit_job
+from utilix.batchq import SERVER
 import pytest
-import os
 from unittest.mock import patch, MagicMock
 import datetime
 import inspect
 import logging
-
-
-# Get the SERVER type
-def get_server_type():
-    hostname = os.uname().nodename
-    if "midway2" in hostname:
-        return "Midway2"
-    elif "midway3" in hostname:
-        return "Midway3"
-    elif "dali" in hostname:
-        return "Dali"
-    else:
-        raise ValueError(
-            f"Unknown server type for hostname {hostname}. Please use midway2, midway3, or dali."
-        )
-
-
-SERVER = get_server_type()
 
 
 def get_partition_and_qos(server):
