@@ -27,10 +27,9 @@ def get_server_type():
 
 
 SERVER = get_server_type()
-SINGULARITY_ALIAS = lambda SERVER: {"Midway2": "singularity",
-                                    "Midway3": "apptainer",
-                                    "Dali": "singularity",
-                                    }[SERVER]
+SINGULARITY_ALIAS = {"Midway2": "singularity", "Midway3": "apptainer", "Dali": "singularity"}
+
+alias = SINGULARITY_ALIAS[SERVER]
 
 USER: Optional[str] = os.environ.get("USER")
 if USER is None:
