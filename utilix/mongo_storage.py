@@ -353,12 +353,13 @@ class MongoDownloader(GridFsInterfaceMongo):
             else:
                 target_file_name = fs_object.md5
 
-            for cache_folder in self.storage_options:
-                possible_path = os.path.join(cache_folder, target_file_name)
-                if os.path.exists(possible_path):
-                    # Great! This already exists. Let's just return
-                    # where it is stored.
-                    return possible_path
+            if not human_readable_file_name:
+                for cache_folder in self.storage_options:
+                    possible_path = os.path.join(cache_folder, target_file_name)
+                    if os.path.exists(possible_path):
+                        # Great! This already exists. Let's just return
+                        # where it is stored.
+                        return possible_path
 
             # Apparently the file does not exist, let's find a place to
             # store the file and download it.
@@ -532,10 +533,11 @@ class APIDownloader(GridFsInterfaceAPI):
             raise ValueError("No storage options available")
 
         if write_to is None:
-            for cache_folder in self.storage_options:
-                possible_path = os.path.join(cache_folder, target_file_name)
-                if os.path.exists(possible_path):
-                    return possible_path
+            if not human_readable_file_name:
+                for cache_folder in self.storage_options:
+                    possible_path = os.path.join(cache_folder, target_file_name)
+                    if os.path.exists(possible_path):
+                        return possible_path
 
             store_files_at = self._check_store_files_at(self.storage_options)
         else:
