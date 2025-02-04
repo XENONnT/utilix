@@ -27,9 +27,9 @@ def get_server_type():
 
 
 SERVER = get_server_type()
-SINGULARITY_ALIAS = {"Midway2": "singularity", "Midway3": "apptainer", "Dali": "singularity"}
+SINGULARITY_ALIAS_MAP = {"Midway2": "singularity", "Midway3": "apptainer", "Dali": "singularity"}
 
-alias = SINGULARITY_ALIAS[SERVER]
+SINGULARITY_ALIAS = SINGULARITY_ALIAS_MAP[SERVER]
 
 USER: Optional[str] = os.environ.get("USER")
 if USER is None:
