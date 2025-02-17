@@ -241,6 +241,11 @@ job = JobSubmission(
 job.submit()
 ```
 
+### XEFIND
+
+For the XEFIND Readme, see [here](xefind/scripts/xefind_readme.md)
+
+
 ### Method `submit_job` (Legacy)
 
 If you have a script written with `utilix<0.8.0`, you probably used the `submit_job` method. This method is now deprecated but still available for backward compatibility. It's recommended to use the `JobSubmission` class instead.
