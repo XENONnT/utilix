@@ -243,7 +243,7 @@ job.submit()
 
 ### XEFIND
 
-For the XEFIND Readme, see [here](xefind/scripts/xefind_readme.md)
+For the XEFIND Readme, see [here](utilix/scripts/README.md)
 
 
 ### Method `submit_job` (Legacy)
