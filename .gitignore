@@ -8,3 +8,5 @@ dist/
 build/
 .venv
 *.log
+**/strax_data/
+
