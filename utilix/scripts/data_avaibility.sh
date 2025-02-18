@@ -31,9 +31,11 @@ if [ -z "$CONTAINER" ]; then
     usage
 fi
 
+current_dir=$(pwd)
+
 shift
 # Run everything inside a subshell to avoid modifying the parent shell
 (
     source /cvmfs/xenon.opensciencegrid.org/releases/nT/${CONTAINER}/setup.sh
-    python3 /home/gvolta/XENONnT/DataAvaibility/data_avaibility.py "${OTHER_ARGS[@]}"
+    python3 "$current_dir/data_avaibility.py" "${OTHER_ARGS[@]}"
 )
