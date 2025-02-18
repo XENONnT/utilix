@@ -4,7 +4,8 @@ import strax
 import straxen
 import pandas as pd
 import numpy as np
-       
+
+
 # Function to parse command line arguments
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -12,10 +13,10 @@ def parse_args():
     )
 
     parser.add_argument(
-        '--container', 
-        type=str, 
-        help='Container name for setting up the environment.', 
-        required=True
+        "--container",
+        type=str,
+        help="Container name for setting up the environment.",
+        required=True,
     )
 
     parser.add_argument(
@@ -56,8 +57,8 @@ def parse_args():
         type=str,
         nargs="*",
         default=["peak_basics", "event_basics"],
-        help='Plugins to include for availability calculation (if not provided, will be determined by the --peaks flag). '
-             'For using i pass, i.e., peak_basics event_basics',
+        help="Plugins to include for availability calculation (if not provided, will be determined by the --peaks flag). "
+        "For using i pass, i.e., peak_basics event_basics",
     )
 
     parser.add_argument(
@@ -72,68 +73,72 @@ def parse_args():
         """Convert string to boolean for argparse."""
         if isinstance(value, bool):
             return value
-        if value.lower() in ('true', 't', 'yes', 'y', '1'):
+        if value.lower() in ("true", "t", "yes", "y", "1"):
             return True
-        elif value.lower() in ('false', 'f', 'no', 'n', '0'):
+        elif value.lower() in ("false", "f", "no", "n", "0"):
             return False
         else:
-            raise argparse.ArgumentTypeError('Boolean value expected (True/False).')
-        
+            raise argparse.ArgumentTypeError("Boolean value expected (True/False).")
+
     parser.add_argument(
-        '--check_peaks',
+        "--check_peaks",
         type=str2bool,
-        nargs='?',
+        nargs="?",
         const=True,  # If argument is given without value, default to True
         default=False,  # Default to False if not provided
-        help='Check above peaks if True, below peaks if False. '
-             'Below peaks: lone_hits, peaklets, merged_s2s, hitlets_nv. '
-             'Above peaks: peak_basics, event_basics.'
+        help="Check above peaks if True, below peaks if False. "
+        "Below peaks: lone_hits, peaklets, merged_s2s, hitlets_nv. "
+        "Above peaks: peak_basics, event_basics.",
     )
 
-    return parser.parse_args()        
+    return parser.parse_args()
+
 
 # Function to initialize Strax context
 def initialize_strax(context_type, global_config, container, output_folder="./strax_data"):
 
     # Initialize the context arguments
-    context_args = {'output_folder': output_folder}
-    
-    print('Login node:\n', platform.node())
-    
+    context_args = {"output_folder": output_folder}
+
+    print("Login node:\n", platform.node())
+
     # Handle Midway or Dali configurations
-    if 'midway' in platform.node():
-        if container <= '2023.05.2':
-            context_args.update({
-                '_rucio_local_path': '/project/lgrandi/rucio',
-                'include_rucio_local': True
-            })
-    elif 'dali' in platform.node():
-        context_args.update({
-            '_auto_append_rucio_local': False,
-            '_rucio_local_path': '/dali/lgrandi/rucio',
-            'include_rucio_local': True
-        })  
+    if "midway" in platform.node():
+        if container <= "2023.05.2":
+            context_args.update(
+                {"_rucio_local_path": "/project/lgrandi/rucio", "include_rucio_local": True}
+            )
+    elif "dali" in platform.node():
+        context_args.update(
+            {
+                "_auto_append_rucio_local": False,
+                "_rucio_local_path": "/dali/lgrandi/rucio",
+                "include_rucio_local": True,
+            }
+        )
     if context_type == "online":
         st = straxen.contexts.xenonnt_online(**context_args)
-        print('Online: ', context_args)
-        
+        print("Online: ", context_args)
+
     elif context_type == "offline":
         if not global_config:
-            raise ValueError("Global config is required for offline context.")   
-        print('Offline: ', context_args)
+            raise ValueError("Global config is required for offline context.")
+        print("Offline: ", context_args)
         st = straxen.contexts.xenonnt(global_config, **context_args)
 
-    if 'midway' in platform.node():
-        st.storage.append(strax.DataDirectory("/project2/lgrandi/xenonnt/processed/", readonly=True))
+    if "midway" in platform.node():
+        st.storage.append(
+            strax.DataDirectory("/project2/lgrandi/xenonnt/processed/", readonly=True)
+        )
         st.storage.append(strax.DataDirectory("/project/lgrandi/xenonnt/processed/", readonly=True))
-        
+
     print("")
     straxen.print_versions()
     print("Storage")
     for item in st.storage:
         print(f"- {item}")
     print("")
-    
+
     return st
 
 
@@ -161,7 +166,7 @@ def calculate_percentage(df, st, plugins):
 
 def main():
     args = parse_args()
-   
+
     # Initialize Strax context
     st = initialize_strax(args.context, args.global_config, args.container)
 
