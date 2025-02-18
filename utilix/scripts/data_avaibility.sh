@@ -6,12 +6,16 @@ usage() {
     exit 1
 }
 
-# Check if at least one argument is provided
+# Ensure at least two arguments are provided (container and other args)
 if [ $# -lt 2 ]; then
     usage
 fi
 
-# Parse arguments
+# Initialize variables
+CONTAINER=""
+OTHER_ARGS=()
+
+# Parse command-line arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --container)
@@ -31,11 +35,14 @@ if [ -z "$CONTAINER" ]; then
     usage
 fi
 
+# Set up the environment
 current_dir=$(pwd)
 
-shift
 # Run everything inside a subshell to avoid modifying the parent shell
 (
+    # Source the setup script for the container
     source /cvmfs/xenon.opensciencegrid.org/releases/nT/${CONTAINER}/setup.sh
-    python3 "$current_dir/data_avaibility.py" "${OTHER_ARGS[@]}"
+    
+    # Run the Python script with all arguments, including --container
+    python3 "$current_dir/data_avaibility.py" --container "$CONTAINER" "${OTHER_ARGS[@]}"
 )
