@@ -118,10 +118,10 @@ def initialize_strax(context_type, global_config, container, output_folder="./st
         )
     if context_type == "online":
         st = straxen.contexts.xenonnt_online(**context_args)
-                
+
     elif context_type == "offline":
         if not global_config:
-            raise ValueError("Global config is required for offline context.")   
+            raise ValueError("Global config is required for offline context.")
         st = straxen.contexts.xenonnt(global_config, **context_args)
 
     if "midway" in platform.node():
