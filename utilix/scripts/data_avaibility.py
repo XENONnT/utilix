@@ -40,10 +40,9 @@ def parse_args():
         help="Global config for offline context (required for offline).",
     )
 
-    parser.add_argument("--include_tags", 
-                        type=str, 
-                        nargs="*",
-                        help='Tags to include, e.g., "*sr0*"')
+    parser.add_argument(
+        "--include_tags", type=str, nargs="*", help='Tags to include, e.g., "*sr0*"'
+    )
 
     parser.add_argument(
         "--exclude_tags",
@@ -104,6 +103,7 @@ def parse_args():
 
     return parser.parse_args()
 
+
 # Function to initialize Strax context
 def initialize_straxen(context_type, global_config, container, cutax, output_folder="./strax_data"):
 
@@ -113,7 +113,7 @@ def initialize_straxen(context_type, global_config, container, cutax, output_fol
     print("\n")
     print("Login node:\n", platform.node())
     print("\n")
-    
+
     # Handle Midway or Dali configurations
     if "midway" in platform.node():
         if container <= "2023.05.2":
@@ -128,7 +128,7 @@ def initialize_straxen(context_type, global_config, container, cutax, output_fol
                 "include_rucio_local": True,
             }
         )
-        
+
     if context_type == "online":
         st = straxen.contexts.xenonnt_online(**context_args)
     elif context_type == "offline":
@@ -152,6 +152,7 @@ def initialize_straxen(context_type, global_config, container, cutax, output_fol
 
     return st
 
+
 # Function to calculate percentage of True values in the dataframe
 def calculate_percentage(df, st, plugins):
     modes = df["mode"].unique()
@@ -173,6 +174,7 @@ def calculate_percentage(df, st, plugins):
 
     return pd.DataFrame(percentages)
 
+
 def main():
     args = parse_args()
 
@@ -182,11 +184,12 @@ def main():
     print("\n")
 
     print("\n")
-    print(f'Setting cutax: {args.cutax_location}')
+    print(f"Setting cutax: {args.cutax_location}")
     sys.path.append(args.cutax_location)
     import cutax
+
     print("\n")
-    
+
     # Initialize Strax context
     st = initialize_straxen(args.context, args.global_config, args.container, cutax)
 

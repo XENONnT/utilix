@@ -44,7 +44,7 @@ current_dir=$(pwd)
     source /cvmfs/xenon.opensciencegrid.org/releases/nT/${CONTAINER}/setup.sh
 
     _CUTAX_LOCATION="${CUTAX_LOCATION}/cutax"
-    
+
     # Run the Python script with all arguments, including --container
     python3 "$current_dir/data_avaibility.py" --container "$CONTAINER" --cutax_location "${_CUTAX_LOCATION}" "${OTHER_ARGS[@]}"
 )
