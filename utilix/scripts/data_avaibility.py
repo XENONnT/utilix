@@ -1,4 +1,5 @@
 import argparse
+import sys
 import platform
 import strax
 import straxen
@@ -20,6 +21,13 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--cutax_location",
+        type=str,
+        help="Cutax location read it from setup.sh of container",
+        required=True,
+    )
+
+    parser.add_argument(
         "--context",
         choices=["online", "offline"],
         required=True,
@@ -32,7 +40,10 @@ def parse_args():
         help="Global config for offline context (required for offline).",
     )
 
-    parser.add_argument("--include_tags", type=str, help='Tags to include, e.g., "*sr0*"')
+    parser.add_argument("--include_tags", 
+                        type=str, 
+                        nargs="*",
+                        help='Tags to include, e.g., "*sr0*"')
 
     parser.add_argument(
         "--exclude_tags",
@@ -93,15 +104,16 @@ def parse_args():
 
     return parser.parse_args()
 
-
 # Function to initialize Strax context
-def initialize_strax(context_type, global_config, container, output_folder="./strax_data"):
+def initialize_straxen(context_type, global_config, container, cutax, output_folder="./strax_data"):
 
     # Initialize the context arguments
     context_args = {"output_folder": output_folder}
 
+    print("\n")
     print("Login node:\n", platform.node())
-
+    print("\n")
+    
     # Handle Midway or Dali configurations
     if "midway" in platform.node():
         if container <= "2023.05.2":
@@ -116,13 +128,13 @@ def initialize_strax(context_type, global_config, container, output_folder="./st
                 "include_rucio_local": True,
             }
         )
+        
     if context_type == "online":
         st = straxen.contexts.xenonnt_online(**context_args)
-
     elif context_type == "offline":
         if not global_config:
             raise ValueError("Global config is required for offline context.")
-        st = straxen.contexts.xenonnt(global_config, **context_args)
+        st = cutax.contexts.xenonnt_offline(xedocs_version=global_config, **context_args)
 
     if "midway" in platform.node():
         st.storage.append(
@@ -130,15 +142,15 @@ def initialize_strax(context_type, global_config, container, output_folder="./st
         )
         st.storage.append(strax.DataDirectory("/project/lgrandi/xenonnt/processed/", readonly=True))
 
-    print("")
+    print("\n")
     straxen.print_versions()
+    print("\n")
     print("Storage")
     for item in st.storage:
         print(f"- {item}")
-    print("")
+    print("\n")
 
     return st
-
 
 # Function to calculate percentage of True values in the dataframe
 def calculate_percentage(df, st, plugins):
@@ -152,7 +164,7 @@ def calculate_percentage(df, st, plugins):
         for p in plugins:
             is_stored = np.array([st.is_stored(r, p) for r in mode_df["name"]])
             tot_length = len(is_stored)
-            _true = np.count_nonzero(is_stored)  # Faster way to count True values
+            _true = np.count_nonzero(is_stored)
             mode_percentages[f"{p}_available"] = (
                 f"{_true}/{tot_length} ({100 * _true / tot_length:.2f}%)"
             )
@@ -161,12 +173,22 @@ def calculate_percentage(df, st, plugins):
 
     return pd.DataFrame(percentages)
 
-
 def main():
     args = parse_args()
 
+    print("\n")
+    for arg, value in vars(args).items():
+        print(f"{arg}: {value}")
+    print("\n")
+
+    print("\n")
+    print(f'Setting cutax: {args.cutax_location}')
+    sys.path.append(args.cutax_location)
+    import cutax
+    print("\n")
+    
     # Initialize Strax context
-    st = initialize_strax(args.context, args.global_config, args.container)
+    st = initialize_straxen(args.context, args.global_config, args.container, cutax)
 
     # Prepare arguments for `select_runs`
     select_runs_kwargs = {"exclude_tags": args.exclude_tags}
