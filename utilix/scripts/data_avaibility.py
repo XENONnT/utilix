@@ -153,6 +153,7 @@ def initialize_straxen(
 
     return st
 
+
 def safe_is_stored(st, r, p):
     try:
         return st.is_stored(st, r, p)
