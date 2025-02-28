@@ -40,10 +40,12 @@ def parse_args():
         help="Global config for offline context (required for offline).",
     )
 
-    parser.add_argument("--include_tags", 
-                        type=str, 
-                        nargs="*",
-                        help='Tags to include, e.g., "*sr0*"')
+    parser.add_argument(
+        "--include_tags", 
+        type=str, 
+        nargs="*",
+        help='Tags to include, e.g., "*sr0*"'
+    )
 
     parser.add_argument(
         "--exclude_tags",
@@ -67,8 +69,8 @@ def parse_args():
         "--plugins",
         type=str,
         nargs="*",
-        default=["peak_basics", "event_basics"],
-        help="Plugins to include for availability calculation (if not provided, will be determined by the --peaks flag). "
+        default=None,
+        help="Plugins to include for availability calculation (if not provided, will be determined by the --check_peaks flag). "
         "For using i pass, i.e., peak_basics event_basics",
     )
 
@@ -105,14 +107,13 @@ def parse_args():
     return parser.parse_args()
 
 # Function to initialize Strax context
-def initialize_straxen(context_type, global_config, container, cutax, output_folder="./strax_data"):
+def initialize_straxen(context_type, global_config, container, cutax=None, output_folder="./strax_data"):
 
     # Initialize the context arguments
     context_args = {"output_folder": output_folder}
 
-    print("\n")
+    print("")
     print("Login node:\n", platform.node())
-    print("\n")
     
     # Handle Midway or Dali configurations
     if "midway" in platform.node():
@@ -142,13 +143,12 @@ def initialize_straxen(context_type, global_config, container, cutax, output_fol
         )
         st.storage.append(strax.DataDirectory("/project/lgrandi/xenonnt/processed/", readonly=True))
 
-    print("\n")
+    print("")
     straxen.print_versions()
-    print("\n")
-    print("Storage")
+    
+    print("\nStorage")
     for item in st.storage:
         print(f"- {item}")
-    print("\n")
 
     return st
 
@@ -176,22 +176,23 @@ def calculate_percentage(df, st, plugins):
 def main():
     args = parse_args()
 
-    print("\n")
+    print("")
     for arg, value in vars(args).items():
         print(f"{arg}: {value}")
-    print("\n")
 
-    print("\n")
-    print(f'Setting cutax: {args.cutax_location}')
-    sys.path.append(args.cutax_location)
-    import cutax
-    print("\n")
-    
-    # Initialize Strax context
-    st = initialize_straxen(args.context, args.global_config, args.container, cutax)
+    # For `offline` context we try to install cutax
+    if args.context == "offline":
+        print("")
+        print(f'Setting cutax: {args.cutax_location}')
+        sys.path.append(args.cutax_location)
+        import cutax
+        st = initialize_straxen(args.context, args.global_config, args.container, cutax)
+    else:
+        st = initialize_straxen(args.context, args.global_config, args.container)
 
     # Prepare arguments for `select_runs`
     select_runs_kwargs = {"exclude_tags": args.exclude_tags}
+    
     # Only add include_tags if provided
     if args.include_tags:
         select_runs_kwargs["include_tags"] = args.include_tags
@@ -207,9 +208,16 @@ def main():
         selection = selection[(selection["start"] >= start_date) & (selection["start"] <= end_date)]
 
     # Calculate and display the percentage table
-    percentage_df = calculate_percentage(selection, st, args.plugins)
-    print(percentage_df)
+    if args.plugins != None:
+        percentage_df = calculate_percentage(selection, st, args.plugins)
+    elif args.check_peaks:
+        percentage_df = calculate_percentage(selection, st, ['lone_hits', 'peaklets', 'merged_s2s', 'hitlets_nv'])
+    elif not args.check_peaks:
+        percentage_df = calculate_percentage(selection, st, ['peak_basics', 'event_basics'])
 
+    print("")
+    print(percentage_df)
+    print("")
 
 if __name__ == "__main__":
     main()
