@@ -488,6 +488,8 @@ class JobSubmission(BaseModel):
         except Exception as e:
             print(f"An error occurred while submitting the job: {str(e)}")
 
+        return job_id
+
 
 def submit_job(
     jobstring: str,
@@ -563,7 +565,8 @@ def submit_job(
         verbose=verbose,
         bypass_validation=bypass_validation,
     )
-    job.submit()
+    job_id = job.submit()
+    return job_id
 
 
 def count_jobs(string: str = "") -> int:
