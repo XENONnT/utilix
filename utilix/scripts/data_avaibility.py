@@ -155,7 +155,7 @@ def initialize_straxen(
 
 def safe_is_stored(st, r, p):
     try:
-        return st.is_stored(st, r, p)
+        return st.is_stored(r, p)
     except (strax.DataCorrupted, strax.DataNotAvailable) as e:
         print(f"Error for run {r}: {e}")
         return False
