@@ -153,12 +153,14 @@ def initialize_straxen(
 
     return st
 
+
 def safe_is_stored(r, p):
     try:
         return st.is_stored(r, p)
     except (strax.DataCorrupted, strax.DataNotAvailable) as e:
         print(f"Error for run {r}: {e}")
         return False
+
 
 # Function to calculate percentage of True values in the dataframe
 def calculate_percentage(df, st, plugins):
