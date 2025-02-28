@@ -176,6 +176,7 @@ def calculate_percentage(df, st, plugins):
 
 
 def main():
+    print("<code>")
     # Get the current date
     current_date = datetime.today().date()
     print("\nToday's date is:", current_date)
@@ -227,7 +228,7 @@ def main():
     print("")
     print(percentage_df)
     print("")
-
+    print("</code>")
 
 if __name__ == "__main__":
     main()
