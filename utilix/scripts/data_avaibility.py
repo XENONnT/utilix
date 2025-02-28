@@ -106,6 +106,7 @@ def parse_args():
 
     return parser.parse_args()
 
+
 # Function to initialize Strax context
 def initialize_straxen(context_type, global_config, container, cutax=None, output_folder="./strax_data"):
 
@@ -114,7 +115,7 @@ def initialize_straxen(context_type, global_config, container, cutax=None, outpu
 
     print("")
     print("Login node:\n", platform.node())
-    
+
     # Handle Midway or Dali configurations
     if "midway" in platform.node():
         if container <= "2023.05.2":
@@ -129,7 +130,7 @@ def initialize_straxen(context_type, global_config, container, cutax=None, outpu
                 "include_rucio_local": True,
             }
         )
-        
+
     if context_type == "online":
         st = straxen.contexts.xenonnt_online(**context_args)
     elif context_type == "offline":
@@ -152,6 +153,7 @@ def initialize_straxen(context_type, global_config, container, cutax=None, outpu
 
     return st
 
+
 # Function to calculate percentage of True values in the dataframe
 def calculate_percentage(df, st, plugins):
     modes = df["mode"].unique()
@@ -172,6 +174,7 @@ def calculate_percentage(df, st, plugins):
         percentages.append(mode_percentages)
 
     return pd.DataFrame(percentages)
+
 
 def main():
     args = parse_args()
