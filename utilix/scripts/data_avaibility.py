@@ -5,7 +5,7 @@ import strax
 import straxen
 import pandas as pd
 import numpy as np
-
+from datetime import datetime
 
 # Function to parse command line arguments
 def parse_args():
@@ -177,6 +177,10 @@ def calculate_percentage(df, st, plugins):
 
 
 def main():
+    # Get the current date
+    current_date = datetime.today().date()
+    print("\nToday's date is:", current_date)
+
     args = parse_args()
 
     print("")
