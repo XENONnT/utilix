@@ -149,7 +149,8 @@ class Token:
     def is_valid(self):
         # TODO do an API call for this instead?
         diff = datetime.datetime.now().timestamp() - self.creation_time
-        return diff < 24 * 60 * 60
+        # https://github.com/XENONnT/xenon_runsDB_api/blob/de29810c76d0c7338922f62e641a1253c3c89872/config/api_server_config.json#L16  # noqa
+        return diff < 48 * 60 * 60
 
     @property
     def json(self):
