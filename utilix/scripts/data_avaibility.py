@@ -153,7 +153,7 @@ def initialize_straxen(
 
     return st
 
-def safe_is_stored(r, p):
+def safe_is_stored(st, r, p):
     try:
         return st.is_stored(r, p)
     except (strax.DataCorrupted, strax.DataNotAvailable) as e:
@@ -170,7 +170,7 @@ def calculate_percentage(df, st, plugins):
         mode_percentages = {"Mode": mode}
 
         for p in plugins:
-            is_stored = np.array([safe_is_stored(r, p) for r in mode_df["name"]])
+            is_stored = np.array([safe_is_stored(st, r, p) for r in mode_df["name"]])
             tot_length = len(is_stored)
             _true = np.count_nonzero(is_stored)
             mode_percentages[f"{p}_available"] = (
