@@ -41,10 +41,7 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--include_tags", 
-        type=str, 
-        nargs="*",
-        help='Tags to include, e.g., "*sr0*"'
+        "--include_tags", type=str, nargs="*", help='Tags to include, e.g., "*sr0*"'
     )
 
     parser.add_argument(
@@ -108,7 +105,9 @@ def parse_args():
 
 
 # Function to initialize Strax context
-def initialize_straxen(context_type, global_config, container, cutax=None, output_folder="./strax_data"):
+def initialize_straxen(
+    context_type, global_config, container, cutax=None, output_folder="./strax_data"
+):
 
     # Initialize the context arguments
     context_args = {"output_folder": output_folder}
@@ -146,7 +145,7 @@ def initialize_straxen(context_type, global_config, container, cutax=None, outpu
 
     print("")
     straxen.print_versions()
-    
+
     print("\nStorage")
     for item in st.storage:
         print(f"- {item}")
@@ -190,16 +189,17 @@ def main():
     # For `offline` context we try to install cutax
     if args.context == "offline":
         print("")
-        print(f'Setting cutax: {args.cutax_location}')
+        print(f"Setting cutax: {args.cutax_location}")
         sys.path.append(args.cutax_location)
         import cutax
+
         st = initialize_straxen(args.context, args.global_config, args.container, cutax)
     else:
         st = initialize_straxen(args.context, args.global_config, args.container)
 
     # Prepare arguments for `select_runs`
     select_runs_kwargs = {"exclude_tags": args.exclude_tags}
-    
+
     # Only add include_tags if provided
     if args.include_tags:
         select_runs_kwargs["include_tags"] = args.include_tags
@@ -218,13 +218,16 @@ def main():
     if args.plugins != None:
         percentage_df = calculate_percentage(selection, st, args.plugins)
     elif args.check_peaks:
-        percentage_df = calculate_percentage(selection, st, ['lone_hits', 'peaklets', 'merged_s2s', 'hitlets_nv'])
+        percentage_df = calculate_percentage(
+            selection, st, ["lone_hits", "peaklets", "merged_s2s", "hitlets_nv"]
+        )
     elif not args.check_peaks:
-        percentage_df = calculate_percentage(selection, st, ['peak_basics', 'event_basics'])
+        percentage_df = calculate_percentage(selection, st, ["peak_basics", "event_basics"])
 
     print("")
     print(percentage_df)
     print("")
+
 
 if __name__ == "__main__":
     main()
