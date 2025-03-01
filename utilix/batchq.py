@@ -5,7 +5,7 @@ import os
 import subprocess
 import re
 import tempfile
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Union, Literal, Optional
 from pydantic import BaseModel, Field, validator
 from simple_slurm import Slurm  # type: ignore
 from . import logger
@@ -429,7 +429,7 @@ class JobSubmission(BaseModel):
             print(f"An error occurred while executing nodestatus: {e}")
             return []
 
-    def submit(self) -> None:
+    def submit(self) -> Union[int, None]:
         """Submit the job to the SLURM queue."""
         os.makedirs(TMPDIR[self.partition], exist_ok=True)
         # Initialize a dictionary with mandatory parameters
@@ -475,7 +475,7 @@ class JobSubmission(BaseModel):
             print(f"Generated slurm script:\n{slurm.script()}")
 
         if self.dry_run:
-            return
+            return None
         # Submit the job
 
         try:
@@ -487,6 +487,8 @@ class JobSubmission(BaseModel):
                 print("Job submission failed.")
         except Exception as e:
             print(f"An error occurred while submitting the job: {str(e)}")
+
+        return job_id
 
 
 def submit_job(
@@ -511,7 +513,7 @@ def submit_job(
     dependency: Optional[str] = None,
     verbose: bool = False,
     bypass_validation: Optional[List[str]] = [],
-) -> None:
+) -> Union[int, None]:
     """Submit a job to the SLURM queue.
 
     Args:
@@ -563,7 +565,8 @@ def submit_job(
         verbose=verbose,
         bypass_validation=bypass_validation,
     )
-    job.submit()
+    job_id = job.submit()
+    return job_id
 
 
 def count_jobs(string: str = "") -> int:
