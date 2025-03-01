@@ -26,6 +26,9 @@ do
     # Install the package in very quiet mode by -qq
     pip install ./$package --user --no-deps -qq
 
+    # Remove the package directory
+    rm -rf $package
+
     echo "$package installation complete."
     echo
 done
