@@ -510,6 +510,7 @@ class JobSubmission(BaseModel):
             else:
                 print("Job submission failed.")
         except Exception as e:
+            job_id = None
             print(f"An error occurred while submitting the job: {str(e)}")
 
         if self.dependency is not None:
