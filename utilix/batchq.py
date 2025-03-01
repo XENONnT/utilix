@@ -159,7 +159,7 @@ class JobSubmission(BaseModel):
         None,
         description="Define a list of nodes which should be excluded from submission",
     )
-    dependency: Optional[str] = Field(
+    dependency: Optional[Union[int, List[int]]] = Field(
         None, description="Provide list of job ids to wait for before running this job"
     )
     verbose: bool = Field(False, description="Print the sbatch command before submitting")
@@ -291,7 +291,7 @@ class JobSubmission(BaseModel):
             raise ValueError("Hours must be between 0 and 72")
         return v
 
-    @validator("node", "exclude_nodes", "dependency")
+    @validator("node", "exclude_nodes")
     def check_node_format(
         cls, v: Optional[str], values: Dict[Any, Any], field: str
     ) -> Optional[str]:
@@ -312,6 +312,30 @@ class JobSubmission(BaseModel):
         if v is not None and not re.match(r"^[a-zA-Z0-9,\[\]-]+$", v):
             raise ValueError("Invalid format for node/exclude_nodes/dependency")
         return v
+
+    @validator("dependency")
+    def check_dependency_value(cls, v: Optional[float], values: Dict[Any, Any]) -> Optional[float]:
+        """Check if the dependency is int or list of int.
+
+        Args:
+            v (Optional[float]): The dependency to check.
+
+        Raises:
+            ValueError: If the dependency is neither int nor list of int.
+
+        Returns:
+            Optional[float]: The dependency to use.
+
+        """
+        if cls._skip_validation("dependency", values):
+            return v
+        if v is None:
+            return v
+        if isinstance(v, int):
+            return v
+        if isinstance(v, list) and all(isinstance(i, int) for i in v):
+            return v
+        raise ValueError("Dependency must be int or list of int")
 
     @validator("container")
     def check_container_format(cls, v: str, values: Dict[Any, Any]) -> str:
@@ -487,6 +511,9 @@ class JobSubmission(BaseModel):
                 print("Job submission failed.")
         except Exception as e:
             print(f"An error occurred while submitting the job: {str(e)}")
+
+        if self.dependency is not None:
+            print(f"Job {job_id} will wait for job ids: {self.dependency}")
 
         return job_id
 
