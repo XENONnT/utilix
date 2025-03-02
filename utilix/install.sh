@@ -24,7 +24,7 @@ do
     tar -xzf $package.tar.gz -C $package --strip-components=1
 
     # Install the package in very quiet mode by -qq
-    pip install ./$package --user --no-deps -qq
+    pip install ./$package --user --no-deps --no-build-isolation -qq
 
     # Remove the package directory
     rm -rf $package
