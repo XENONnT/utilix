@@ -35,10 +35,10 @@ class Tarball:
     def tarball_path(self):
         return os.path.join(self.destination, self.tarball_name)
 
-    def create_tarball(self):
+    def create_tarball(self, overwrite=False):
         """Create the tarball of package."""
 
-        if os.path.exists(self.tarball_path):
+        if os.path.exists(self.tarball_path) and not overwrite:
             raise RuntimeError(f"{self.tarball_path} already exists!")
 
         # Get the origin of the package source
