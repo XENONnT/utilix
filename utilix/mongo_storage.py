@@ -188,7 +188,7 @@ class GridFsInterfaceMongo(GridFsBase):
         query = {"md5": self.compute_md5(abs_path)}
         if config_name is not None:
             # We want to check also the config name
-            # needed in case the file content is the same 
+            # needed in case the file content is the same
             # but we have two different config names
             query[self.config_identifier] = config_name
         return self.collection.count_documents(query) > 0
