@@ -167,7 +167,7 @@ class GridFsInterfaceMongo(GridFsBase):
         query = self.get_query_config(config)
         return self.collection.count_documents(query) > 0
 
-    def md5_stored(self, abs_path):
+    def md5_stored(self, abs_path, config_name=None):
         """
         NB: RAM intensive operation!
         Carefully compare if the MD5 identifier is the same as the file
@@ -176,12 +176,21 @@ class GridFsInterfaceMongo(GridFsBase):
         :param abs_path: str, absolute path to the file name
         :return: bool, returns if the exact same file is already stored
             in the database
+        :param config_name: str, (Optional) name under which the file
+            should be stored. If not provided, the function will just
+            check if the file is stored under the same name as the
+            absolute path.
 
         """
         if not os.path.exists(abs_path):
             # A file that does not exist does not have the same MD5
             return False
         query = {"md5": self.compute_md5(abs_path)}
+        if config_name is not None:
+            # We want to check also the config name
+            # needed in case the file content is the same
+            # but we have two different config names
+            query[self.config_identifier] = config_name
         return self.collection.count_documents(query) > 0
 
     def test_find(self):
@@ -430,7 +439,7 @@ class GridFsInterfaceAPI(GridFsBase):
         query = self.get_query_config(config)
         return self.db.count_files(query) > 0
 
-    def md5_stored(self, abs_path: str) -> bool:
+    def md5_stored(self, abs_path: str, config_name: Optional[str] = None) -> bool:
         """Check if file with same MD5 is stored.
 
         RAM intensive.
@@ -439,6 +448,9 @@ class GridFsInterfaceAPI(GridFsBase):
         if not os.path.exists(abs_path):
             return False
         query = {"md5": self.compute_md5(abs_path)}
+        if config_name is not None:
+            # Check also the config name
+            query[self.config_identifier] = config_name
         return self.db.count_files(query) > 0
 
     def test_find(self) -> None:
