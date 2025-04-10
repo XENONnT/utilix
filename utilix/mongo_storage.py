@@ -439,7 +439,7 @@ class GridFsInterfaceAPI(GridFsBase):
         query = self.get_query_config(config)
         return self.db.count_files(query) > 0
 
-def md5_stored(self, abs_path: str, config_name: Optional[str] = None) -> bool:
+    def md5_stored(self, abs_path: str, config_name: Optional[str] = None) -> bool:
         """Check if file with same MD5 is stored.
 
         RAM intensive.
@@ -452,7 +452,7 @@ def md5_stored(self, abs_path: str, config_name: Optional[str] = None) -> bool:
             # Check also the config name
             query[self.config_identifier] = config_name
         return self.db.count_files(query) > 0
-
+        
     def test_find(self) -> None:
         """Test the connection to the collection."""
         if self.db.get_files({}, projection={"_id": 1}) is None:
