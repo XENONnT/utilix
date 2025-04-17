@@ -75,7 +75,7 @@ class Tarball:
         mod = importlib.import_module(package_name)
         # Try initialize git repository
         try:
-            repo = Repo(mod.__path__[0], search_parent_directories=True)
+            repo = Repo(mod.__file__, search_parent_directories=True)
             return repo
         except (OSError, InvalidGitRepositoryError):
             return
