@@ -2,6 +2,7 @@ import os
 import site
 import tarfile
 import importlib
+from pathlib import Path
 from git import Repo, InvalidGitRepositoryError
 
 
@@ -10,6 +11,9 @@ def filter_tarinfo(tarinfo, git_ignored_files):
 
     # Exclude Git-ignored files
     if any(f in tarinfo.name for f in git_ignored_files):
+        return None
+
+    if ".git" in Path(tarinfo.name).parts:
         return None
 
     # Include the file
