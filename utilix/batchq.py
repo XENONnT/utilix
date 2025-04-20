@@ -21,15 +21,14 @@ def get_server_type():
     elif "dali" in hostname:
         return "Dali"
     else:
-        raise ValueError(
-            f"Unknown server type for hostname {hostname}. Please use midway2, midway3, or dali."
-        )
+        logger.warning("Unknown hostname %s detected", hostname)
+        return "Unknown"
 
 
 SERVER = get_server_type()
 SINGULARITY_ALIAS_MAP = {"Midway2": "singularity", "Midway3": "apptainer", "Dali": "singularity"}
 
-SINGULARITY_ALIAS = SINGULARITY_ALIAS_MAP[SERVER]
+SINGULARITY_ALIAS = SINGULARITY_ALIAS_MAP.get(SERVER, "singularity")
 
 USER: Optional[str] = os.environ.get("USER")
 if USER is None:
