@@ -6,16 +6,16 @@ from pathlib import Path
 from git import Repo, InvalidGitRepositoryError
 
 
-def filter_tarinfo(tarinfo, git_ignored_files):
-    """Custom filter for tarfile to exclude Git-ignored files."""
-
+def filter_tarinfo(tarinfo, git_ignored_files, tarball_ignored_files=None):
+    """Custom filter for tarfile to exclude Git-ignored files and tarball-ignored files."""
     # Exclude Git-ignored files
     if any(f in tarinfo.name for f in git_ignored_files):
         return None
-
     if ".git" in Path(tarinfo.name).parts:
         return None
-
+    # Exclude tarball-ignored files if .tarballignore exists
+    if tarball_ignored_files and any(f in tarinfo.name for f in tarball_ignored_files):
+        return None
     # Include the file
     return tarinfo
 
@@ -59,13 +59,20 @@ class Tarball:
             "--others", "--ignored", "--exclude-standard"
         ).splitlines()
 
+        # Check for .tarballignore file and read its contents if exists
+        tarball_ignored_files = None
+        tarballignore_path = os.path.join(package_origin, ".tarballignore")
+        if os.path.exists(tarballignore_path):
+            with open(tarballignore_path, "r") as f:
+                tarball_ignored_files = [line.strip() for line in f if line.strip()]
+
         # Define the output tarball filename
         with tarfile.open(self.tarball_path, "w:gz") as tar:
             tar.add(
                 package_origin,
                 arcname=os.path.basename(package_origin),
                 recursive=True,
-                filter=lambda tarinfo: filter_tarinfo(tarinfo, git_ignored_files),
+                filter=lambda tarinfo: filter_tarinfo(tarinfo, git_ignored_files, tarball_ignored_files),
             )
 
     @staticmethod
