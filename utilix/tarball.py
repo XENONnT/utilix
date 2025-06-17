@@ -87,12 +87,21 @@ class Tarball:
                     filter=lambda tarinfo: filter_tarinfo(tarinfo, git_ignored_files, tarball_ignored_files),
                 )
             else:
-                # Use original filter when no .tarballignore file exists
+                # Use original behavior when no .tarballignore file exists
+                def original_filter(tarinfo):
+                    # Exclude Git-ignored files
+                    if any(f in tarinfo.name for f in git_ignored_files):
+                        return None
+                    if ".git" in Path(tarinfo.name).parts:
+                        return None
+                    # Include the file
+                    return tarinfo
+                
                 tar.add(
                     package_origin,
                     arcname=os.path.basename(package_origin),
                     recursive=True,
-                    filter=lambda tarinfo: filter_tarinfo_original(tarinfo, git_ignored_files),
+                    filter=original_filter,
                 )
 
     @staticmethod
