@@ -76,9 +76,13 @@ class Tarball:
         else:
             print(f"DEBUG: No .tarballignore file found")
 
+        print(f"DEBUG: tarball_ignored_files is None: {tarball_ignored_files is None}")
+        print(f"DEBUG: tarball_ignored_files value: {tarball_ignored_files}")
+
         # Define the output tarball filename
         with tarfile.open(self.tarball_path, "w:gz") as tar:
             if tarball_ignored_files is not None:
+                print("DEBUG: Using NEW filter with tarball ignore support")
                 # Use new filter with tarball ignore support
                 tar.add(
                     package_origin,
@@ -87,6 +91,7 @@ class Tarball:
                     filter=lambda tarinfo: filter_tarinfo(tarinfo, git_ignored_files, tarball_ignored_files),
                 )
             else:
+                print("DEBUG: Using ORIGINAL filter behavior")
                 # Use original behavior when no .tarballignore file exists
                 def original_filter(tarinfo):
                     # Exclude Git-ignored files
