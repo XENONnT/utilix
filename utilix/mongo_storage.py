@@ -149,8 +149,9 @@ class GridFsInterfaceMongo(GridFsBase):
         self.grid_fs = gridfs.GridFS(collection.database)
 
     def get_query_config(self, config):
-        """Generate identifier to query against. This is just the configs name.
+        """Generate identifier to query against.
 
+        This is just the configs name.
         :param config: str, name of the file of interest
         :return: dict, that can be used in queries
 
