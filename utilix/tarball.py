@@ -69,8 +69,10 @@ class Tarball:
         tarball_ignore_patterns = None
         tarball_ignore_file = os.path.join(package_origin, ".tarballignore")
         if os.path.exists(tarball_ignore_file):
-            with open(tarball_ignore_file, 'r') as f:
-                tarball_ignore_patterns = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+            with open(tarball_ignore_file, "r") as f:
+                tarball_ignore_patterns = [
+                    line.strip() for line in f if line.strip() and not line.startswith("#")
+                ]
 
         # Define the output tarball filename
         with tarfile.open(self.tarball_path, "w:gz") as tar:
@@ -78,7 +80,9 @@ class Tarball:
                 package_origin,
                 arcname=os.path.basename(package_origin),
                 recursive=True,
-                filter=lambda tarinfo: filter_tarinfo(tarinfo, git_ignored_files, tarball_ignore_patterns),
+                filter=lambda tarinfo: filter_tarinfo(
+                    tarinfo, git_ignored_files, tarball_ignore_patterns
+                ),
             )
 
     @staticmethod
