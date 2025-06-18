@@ -6,21 +6,22 @@ from pathlib import Path
 from git import Repo, InvalidGitRepositoryError
 
 
-def filter_tarinfo(tarinfo, git_ignored_files, tarball_ignored_files=None):
-    """Custom filter for tarfile to exclude Git-ignored files and tarball-ignored files."""
-    # Debug info
-    if tarball_ignored_files is not None:
-        print(f"DEBUG: filter_tarinfo called with tarball_ignored_files = {tarball_ignored_files}")
-    
+def filter_tarinfo(tarinfo, git_ignored_files, tarball_ignore_patterns=None):
+    """Custom filter for tarfile to exclude Git-ignored files and .tarballignore patterns."""
+
     # Exclude Git-ignored files
     if any(f in tarinfo.name for f in git_ignored_files):
         return None
+
     if ".git" in Path(tarinfo.name).parts:
         return None
-    # Exclude tarball-ignored files if .tarballignore exists
-    if tarball_ignored_files is not None and any(f in tarinfo.name for f in tarball_ignored_files):
-        print(f"DEBUG: Excluding {tarinfo.name} due to .tarballignore")
-        return None
+
+    # Exclude .tarballignore patterns if provided
+    if tarball_ignore_patterns:
+        for pattern in tarball_ignore_patterns:
+            if pattern in tarinfo.name:
+                return None
+
     # Include the file
     return tarinfo
 
@@ -64,49 +65,28 @@ class Tarball:
             "--others", "--ignored", "--exclude-standard"
         ).splitlines()
 
-        # Check for .tarballignore file and read its contents if exists
-        tarball_ignored_files = None
-        tarballignore_path = os.path.join(package_origin, ".tarballignore")
-        print(f"DEBUG: Checking for .tarballignore at: {tarballignore_path}")
-        if os.path.exists(tarballignore_path):
-            print(f"DEBUG: .tarballignore found!")
-            with open(tarballignore_path, "r") as f:
-                tarball_ignored_files = [
-                    line.strip() for line in f 
-                    if line.strip() and not line.strip().startswith('#')
-                ]
-            print(f"DEBUG: tarball_ignored_files = {tarball_ignored_files}")
-        else:
-            print(f"DEBUG: No .tarballignore file found")
-
-        print(f"DEBUG: tarball_ignored_files is None: {tarball_ignored_files is None}")
-        print(f"DEBUG: tarball_ignored_files value: {tarball_ignored_files}")
+        # Check for .tarballignore file
+        tarball_ignore_patterns = None
+        tarball_ignore_file = os.path.join(package_origin, ".tarballignore")
+        if os.path.exists(tarball_ignore_file):
+            with open(tarball_ignore_file, 'r') as f:
+                tarball_ignore_patterns = [line.strip() for line in f if line.strip() and not line.startswith('#')]
 
         # Define the output tarball filename
         with tarfile.open(self.tarball_path, "w:gz") as tar:
-            if tarball_ignored_files is not None:
-                print("DEBUG: Using NEW filter with tarball ignore support")
-                # Use new filter with tarball ignore support
-                tar.add(
-                    package_origin,
-                    arcname=os.path.basename(package_origin),
-                    recursive=True,
-                    filter=lambda tarinfo: filter_tarinfo(tarinfo, git_ignored_files, tarball_ignored_files),
-                )
-            else:
-                print("DEBUG: Using ORIGINAL filter behavior (EXACT copy)")
-                # Use EXACT original behavior when no .tarballignore file exists
-                tar.add(
-                    package_origin,
-                    arcname=os.path.basename(package_origin),
-                    recursive=True,
-                    filter=lambda tarinfo: filter_tarinfo_original(tarinfo, git_ignored_files),
-                )
+            tar.add(
+                package_origin,
+                arcname=os.path.basename(package_origin),
+                recursive=True,
+                filter=lambda tarinfo: filter_tarinfo(tarinfo, git_ignored_files, tarball_ignore_patterns),
+            )
 
     @staticmethod
     def get_installed_git_repo(package_name):
         """If a package is in editable user-installed mode, we can get its git working directory.
+
         The editable user-installed is usually installed by `pip install -e ./ --user`.
+
         """
         # Find the package's location
         mod = importlib.import_module(package_name)
@@ -120,14 +100,18 @@ class Tarball:
     @staticmethod
     def is_user_installed(package_name):
         """Test if a package is in user-installed mode.
+
         The user-installed is usually installed by `pip install ./ --user`.
+
         """
         # Find the package's location using importlib
         spec = importlib.util.find_spec(package_name)
         if spec is None:
             raise ModuleNotFoundError(f"Package {package_name} is not installed.")
         package_location = spec.origin
+
         # Get the user-specific package directory
         user_site_packages = site.getusersitepackages()
+
         # Check if the package is installed in the user-specific directory
         return package_location.startswith(user_site_packages)
