@@ -38,8 +38,9 @@ SCRATCH_DIR: str = os.environ.get("SCRATCH", ".")
 # for non-dali hosts, SCRATCH_DIR must have write permission
 if not os.access(SCRATCH_DIR, os.W_OK) and SERVER != "Dali":
     raise ValueError(
-        f"SCRATCH_DIR {SCRATCH_DIR} does not have write permission. "
-        "You may need to set SCRATCH_DIR manually in your .bashrc or .bash_profile."
+        f"SCRATCH {SCRATCH_DIR} does not have write permission. "
+        "You may need to set SCRATCH manually in your .bashrc or .bash_profile using"
+        "export SCRATCH=/path/to/your/scratch"
     )
 
 PARTITIONS: List[str] = [
