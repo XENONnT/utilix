@@ -107,7 +107,6 @@ class GridFsInterfaceMongo(GridFsBase):
             (only deactivate if you are using a brand new database)!
 
         """
-
         if collection is None:
             if not readonly:
                 # We want admin access to start writing data!
@@ -169,14 +168,11 @@ class GridFsInterfaceMongo(GridFsBase):
         return self.collection.count_documents(query) > 0
 
     def md5_stored(self, abs_path):
-        """
-        NB: RAM intensive operation!
-        Carefully compare if the MD5 identifier is the same as the file
-        as stored under abs_path.
+        """NB: RAM intensive operation! Carefully compare if the MD5 identifier is the same as the
+        file as stored under abs_path.
 
         :param abs_path: str, absolute path to the file name
-        :return: bool, returns if the exact same file is already stored
-            in the database
+        :return: bool, returns if the exact same file is already stored in the database
 
         """
         if not os.path.exists(abs_path):
@@ -205,12 +201,11 @@ class GridFsInterfaceMongo(GridFsBase):
 
     @staticmethod
     def compute_md5(abs_path):
-        """
-        NB: RAM intensive operation!
-        Get the md5 hash of a file stored under abs_path
+        """NB: RAM intensive operation! Get the md5 hash of a file stored under abs_path.
 
         :param abs_path: str, absolute path to a file
         :return: str, the md5-hash of the requested file
+
         """
         # This function is copied from:
         # stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file
