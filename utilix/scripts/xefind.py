@@ -324,16 +324,14 @@ def parse_args():
 
     """
 
-    parser = argparse.ArgumentParser(
-        description="""
+    parser = argparse.ArgumentParser(description="""
         Check if the data is available for a given list of runs,
         or for a given source and science run.
         You can provide a file with the run_ids,
         or use the source and science run to get the run_ids from the db.
         Example from db:   python find_available.py peaklets --science_run sr1 --source none
         Example from file: python find_available.py peaklets --filename /path/to/runs.txt
-        """
-    )
+        """)
     # First argument is the data type
     parser.add_argument(
         "data_type", type=str, help="The data type to check (e.g. peaklets, event_info, etc)"
