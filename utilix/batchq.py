@@ -506,7 +506,7 @@ class JobSubmission(BaseModel):
 
         # Handle dry run scenario
         if self.verbose or self.dry_run:
-            print(slurm.script(convert=False))
+            print(f"sbatch << EOF\n{slurm.script(convert=False)}\nEOF\n")
 
         if self.dry_run:
             return None
