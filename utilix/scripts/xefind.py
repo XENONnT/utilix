@@ -319,9 +319,7 @@ def parse_args():
         argparse.Namespace: The parsed command line arguments.
 
     """
-    parser = argparse.ArgumentParser(
-        description=\
-                    """
+    description = """
         Check if the data is available for a given list of runs,
         or for a given source and science run.
         You can provide a file with the run_ids,
@@ -329,7 +327,7 @@ def parse_args():
         Example from db:   python find_available.py peaklets --science_run sr1 --source none
         Example from file: python find_available.py peaklets --filename /path/to/runs.txt
         """
-    )
+    parser = argparse.ArgumentParser(description=description)
     # First argument is the data type
     parser.add_argument(
         "data_type", type=str, help="The data type to check (e.g. peaklets, event_info, etc)"

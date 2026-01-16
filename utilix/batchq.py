@@ -421,20 +421,20 @@ class JobSubmission(BaseModel):
                 "INSTALL_CUTAX is set to 1, ignoring CUTAX_LOCATION and unsetting it for the job."
             )
         new_job_string = (
-            f"echo running on $SLURMD_NODENAME\n"
-            f"unset X509_CERT_DIR\n"
-            f'if [ "$INSTALL_CUTAX" == "1" ]; then unset CUTAX_LOCATION; fi\n'
+            "echo running on $SLURMD_NODENAME\n"
+            "unset X509_CERT_DIR\n"
+            'if [ "$INSTALL_CUTAX" == "1" ]; then unset CUTAX_LOCATION; fi\n'
             f"module load {SINGULARITY_ALIAS}\n"
             f"{SINGULARITY_ALIAS} exec {bind_string} {self.container} {bash_command}\n"
-            f"exit_code=$?\n"
+            "exit_code=$?\n"
         )
         if self.use_tmp_file:
             new_job_string += f"rm {exec_file}\n"
         new_job_string += (
-            f"if [ $exit_code -ne 0 ]; then\n"
-            f"    echo Python script failed with exit code $exit_code\n"
-            f"    exit $exit_code\n"
-            f"fi\n"
+            "if [ $exit_code -ne 0 ]; then\n"
+            "    echo Python script failed with exit code $exit_code\n"
+            "    exit $exit_code\n"
+            "fi\n"
         )
         if file_discriptor is not None:
             os.close(file_discriptor)
