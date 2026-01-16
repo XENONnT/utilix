@@ -96,7 +96,6 @@ def get_runs_from_source(science_run, source):
         list: A list of run numbers matching the given science run and source.
 
     """
-
     query = SCIENCE_RUNS[science_run]
     query["source"] = source
     # end is lt now in GMT time
@@ -153,7 +152,6 @@ def get_lineage_hash_from_version(context, versions, data_type):
         str or None: The lineae hash if found, None otherwise.
 
     """
-
     ctxs = xent_collection(collection="contexts")
 
     if context == "xenonnt_online":
@@ -229,7 +227,6 @@ def check_runs_available(data_type, run_ids, extra_location="", livetime=False):
         pandas.DataFrame: A DataFrame containing the availability information for each run ID.
 
     """
-
     if not run_ids:
         raise ValueError("No run_ids found")
 
@@ -300,7 +297,6 @@ def get_runs_from_db(run_ids, data_type, lineage_hash, location=None):
         list: A list of run IDs matching the criteria.
 
     """
-
     coll = xent_collection(collection="runs")
     run_ids = [int(run_id) for run_id in run_ids]
 
@@ -323,9 +319,9 @@ def parse_args():
         argparse.Namespace: The parsed command line arguments.
 
     """
-
     parser = argparse.ArgumentParser(
-        description="""
+        description=\
+                    """
         Check if the data is available for a given list of runs,
         or for a given source and science run.
         You can provide a file with the run_ids,

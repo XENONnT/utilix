@@ -272,7 +272,6 @@ class DB:
         takes place automatically.
 
         """
-
         # map from all kinds of types (int, np int, ...)
         identifier = str(identifier)
 
@@ -290,7 +289,6 @@ class DB:
         automatically.
 
         """
-
         # map from all kinds of types (int, np int, ...)
         identifier = str(identifier)
 
@@ -321,7 +319,6 @@ class DB:
         Identifier can be run number of name.
 
         """
-
         datum = cleanup_datadict(datum)
 
         # map from all kinds of types (int, np int, ...)
@@ -337,7 +334,6 @@ class DB:
 
     def delete_data(self, identifier, datum):
         """Updates a datum for a document with a matching identifier (name or run number)"""
-
         # map from all kinds of types (int, np int, ...)
         identifier = str(identifier)
 
@@ -519,7 +515,6 @@ class DB:
 
 class PyMongoCannotConnect(Exception):
     """Raise error when we cannot connect to the pymongo client."""
-
     pass
 
 

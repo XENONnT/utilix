@@ -403,7 +403,9 @@ class JobSubmission(BaseModel):
                 file_discriptor = None
                 exec_file = f"{TMPDIR[self.partition]}/tmp.sh"
             else:
-                file_discriptor, exec_file = tempfile.mkstemp(suffix=".sh", dir=TMPDIR[self.partition])
+                file_discriptor, exec_file = tempfile.mkstemp(
+                    suffix=".sh", dir=TMPDIR[self.partition]
+                )
                 _make_executable(exec_file)
                 os.write(file_discriptor, bytes("#!/bin/bash\n" + self.jobstring, "utf-8"))
             bash_command = exec_file
