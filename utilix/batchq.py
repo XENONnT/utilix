@@ -120,7 +120,7 @@ def _get_qos_list() -> List[str]:
         qos_list = [qos[:-1] for qos in qos_list]
         return qos_list
     except subprocess.CalledProcessError as e:
-        print(f"An error occurred while executing sacctmgr: {e}")
+        logger.warning(f"An error occurred while executing sacctmgr: {e}")
         return []
 
 
@@ -248,7 +248,7 @@ class JobSubmission(BaseModel):
                 log_filename = os.path.basename(abs_log_path)
                 new_log_path = f"{TMPDIR['dali']}/{log_filename}"
                 values["log"] = new_log_path
-                print(f"Your log is relocated at: {new_log_path}")
+                logger.warning(f"Your log is relocated at: {new_log_path}")
                 logger.warning("Log path is overwritten to %s", new_log_path)
         return v
 
@@ -365,7 +365,7 @@ class JobSubmission(BaseModel):
             root_dir = ["/project2", "/project"]
         for root in root_dir:
             image_path = os.path.join(root, SINGULARITY_DIR, v)
-            print("searched in", image_path)
+            logger.warning("searched in", image_path)
             if os.path.exists(image_path):
                 return image_path
         raise FileNotFoundError(f"Container {v} does not exist")
@@ -460,7 +460,7 @@ class JobSubmission(BaseModel):
                         lc_nodes.append(columns[0])
             return lc_nodes
         except subprocess.CalledProcessError as e:
-            print(f"An error occurred while executing nodestatus: {e}")
+            logger.warning(f"An error occurred while executing nodestatus: {e}")
             return []
 
     def submit(self) -> Union[int, None]:
@@ -506,7 +506,7 @@ class JobSubmission(BaseModel):
 
         # Handle dry run scenario
         if self.verbose or self.dry_run:
-            print(f"Generated slurm script:\n{slurm.script(convert=False)}")
+            print(slurm.script(convert=False))
 
         if self.dry_run:
             return None
@@ -515,16 +515,16 @@ class JobSubmission(BaseModel):
         try:
             job_id = slurm.sbatch(shell="/bin/bash")
             if job_id:
-                print(f"Job submitted successfully. Job ID: {job_id}")
-                print(f"Your log is located at: {self.log}")
+                logger.warning(f"Job submitted successfully. Job ID: {job_id}")
+                logger.warning(f"Your log is located at: {self.log}")
             else:
-                print("Job submission failed.")
+                logger.warning("Job submission failed.")
         except Exception as e:
             job_id = None
-            print(f"An error occurred while submitting the job: {str(e)}")
+            logger.warning(f"An error occurred while submitting the job: {str(e)}")
 
         if self.dependency is not None:
-            print(f"Job {job_id} will wait for job ids: {self.dependency}")
+            logger.warning(f"Job {job_id} will wait for job ids: {self.dependency}")
 
         return job_id
 
