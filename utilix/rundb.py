@@ -515,6 +515,7 @@ class DB:
 
 class PyMongoCannotConnect(Exception):
     """Raise error when we cannot connect to the pymongo client."""
+
     pass
 
 
