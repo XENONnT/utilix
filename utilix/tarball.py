@@ -8,7 +8,6 @@ from git import Repo, InvalidGitRepositoryError
 
 def filter_tarinfo(tarinfo, git_ignored_files, tarball_ignore_patterns=None):
     """Custom filter for tarfile to exclude Git-ignored files and .tarballignore patterns."""
-
     # Exclude Git-ignored files
     if any(f in tarinfo.name for f in git_ignored_files):
         return None
@@ -47,7 +46,6 @@ class Tarball:
 
     def create_tarball(self, overwrite=False):
         """Create the tarball of package."""
-
         if os.path.exists(self.tarball_path) and not overwrite:
             raise RuntimeError(f"{self.tarball_path} already exists!")
 

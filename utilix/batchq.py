@@ -147,6 +147,7 @@ class JobSubmission(BaseModel):
     dry_run: bool = Field(
         False, description="Only print how the job looks like, without submitting"
     )
+    use_tmp_file: bool = Field(True, description="Whether write jobstring to temporary file")
     mem_per_cpu: int = Field(1000, description="MB requested for job")
     container: str = Field(
         "xenonnt-development.simg", description="Name of the container to activate"
@@ -397,13 +398,20 @@ class JobSubmission(BaseModel):
             str: The new jobstring with the singularity command.
 
         """
-        if self.dry_run:
-            file_discriptor = None
-            exec_file = f"{TMPDIR[self.partition]}/tmp.sh"
+        if self.use_tmp_file:
+            if self.dry_run:
+                file_discriptor = None
+                exec_file = f"{TMPDIR[self.partition]}/tmp.sh"
+            else:
+                file_discriptor, exec_file = tempfile.mkstemp(
+                    suffix=".sh", dir=TMPDIR[self.partition]
+                )
+                _make_executable(exec_file)
+                os.write(file_discriptor, bytes("#!/bin/bash\n" + self.jobstring, "utf-8"))
+            bash_command = exec_file
         else:
-            file_discriptor, exec_file = tempfile.mkstemp(suffix=".sh", dir=TMPDIR[self.partition])
-            _make_executable(exec_file)
-            os.write(file_discriptor, bytes("#!/bin/bash\n" + self.jobstring, "utf-8"))
+            file_discriptor = None
+            bash_command = self.jobstring
         bind_string = " ".join(
             [f"--bind {b}" for b in self.bind]  # pylint: disable=not-an-iterable
         )
@@ -413,17 +421,20 @@ class JobSubmission(BaseModel):
                 "INSTALL_CUTAX is set to 1, ignoring CUTAX_LOCATION and unsetting it for the job."
             )
         new_job_string = (
-            f"echo running on $SLURMD_NODENAME\n"
-            f"unset X509_CERT_DIR\n"
-            f'if [ "$INSTALL_CUTAX" == "1" ]; then unset CUTAX_LOCATION; fi\n'
+            "echo running on $SLURMD_NODENAME\n"
+            "unset X509_CERT_DIR\n"
+            'if [ "$INSTALL_CUTAX" == "1" ]; then unset CUTAX_LOCATION; fi\n'
             f"module load {SINGULARITY_ALIAS}\n"
-            f"{SINGULARITY_ALIAS} exec {bind_string} {self.container} {exec_file}\n"
-            f"exit_code=$?\n"
-            f"rm {exec_file}\n"
-            f"if [ $exit_code -ne 0 ]; then\n"
-            f"    echo Python script failed with exit code $exit_code\n"
-            f"    exit $exit_code\n"
-            f"fi\n"
+            f"{SINGULARITY_ALIAS} exec {bind_string} {self.container} {bash_command}\n"
+            "exit_code=$?\n"
+        )
+        if self.use_tmp_file:
+            new_job_string += f"rm {exec_file}\n"
+        new_job_string += (
+            "if [ $exit_code -ne 0 ]; then\n"
+            "    echo Python script failed with exit code $exit_code\n"
+            "    exit $exit_code\n"
+            "fi\n"
         )
         if file_discriptor is not None:
             os.close(file_discriptor)
@@ -495,7 +506,7 @@ class JobSubmission(BaseModel):
 
         # Handle dry run scenario
         if self.verbose or self.dry_run:
-            print(f"Generated slurm script:\n{slurm.script()}")
+            print(f"Generated slurm script:\n{slurm.script(convert=False)}")
 
         if self.dry_run:
             return None
@@ -530,6 +541,7 @@ def submit_job(
     jobname: str = "somejob",
     sbatch_file: Optional[str] = None,
     dry_run: bool = False,
+    use_tmp_file: bool = True,
     mem_per_cpu: int = 1000,
     container: str = "xenonnt-development.simg",
     bind: Optional[List[str]] = None,
@@ -554,6 +566,7 @@ def submit_job(
         jobname (str): How to name this job. Default is "somejob".
         sbatch_file (Optional[str]): Deprecated. Default is None.
         dry_run (bool): Only print how the job looks like, without submitting. Default is False.
+        use_tmp_file (bool): Whether write jobstring to temporary file. Default is True.
         mem_per_cpu (int): MB requested for job. Default is 1000.
         container (str): Name of the container to activate. Default is "xenonnt-development.simg".
         bind (List[str]): Paths to add to the container. Default is None.
@@ -581,6 +594,7 @@ def submit_job(
         jobname=jobname,
         sbatch_file=sbatch_file,
         dry_run=dry_run,
+        use_tmp_file=use_tmp_file,
         mem_per_cpu=mem_per_cpu,
         container=container,
         bind=bind,
