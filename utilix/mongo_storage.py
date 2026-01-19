@@ -12,6 +12,7 @@ from pymongo.collection import Collection
 from utilix.rundb import DB, xent_collection
 from utilix.utils import to_str_tuple
 from utilix import uconfig, logger
+from utilix.sqlite_backend import OfflineGridFS, _load_sqlite_config
 
 
 class GridFsBase:
@@ -305,21 +306,65 @@ class MongoDownloader(GridFsInterfaceMongo):
         return
 
     def initialize(self, store_files_at=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # We are going to set a place where to store the files. It's
-        # either specified by the user or we use these defaults:
+        # parse cache dirs (same as you already do)
         if store_files_at is None:
-            store_files_at = (
-                "./resource_cache",
-                "/tmp/straxen_resource_cache",
-            )
-        elif not isinstance(store_files_at, (tuple, str, list)):
-            raise ValueError(f"{store_files_at} should be tuple of paths!")
+            store_files_at = ("./resource_cache", "/tmp/straxen_resource_cache")
         elif isinstance(store_files_at, str):
             store_files_at = to_str_tuple(store_files_at)
+        elif isinstance(store_files_at, list):
+            store_files_at = tuple(store_files_at)
+        elif not isinstance(store_files_at, (tuple, list)):
+            raise ValueError(f"{store_files_at} should be tuple/list/str of paths!")
 
         self.storage_options = store_files_at
+
+        # offline?
+        try:
+            sqlite_cfg = _load_sqlite_config()
+            sqlite_active = sqlite_cfg.sqlite_active()
+        except Exception:
+            sqlite_cfg = None
+            sqlite_active = False
+
+        if sqlite_active:
+            self._offline = OfflineGridFS(
+                sqlite_path=sqlite_cfg.sqlite_path,
+                offline_root=sqlite_cfg.offline_root,
+                cache_dirs=tuple(self.storage_options),
+                gridfs_db_name="files",
+            )
+            # IMPORTANT: do NOT call super().__init__()
+            return
+
+        # online fallback
+        super().__init__(*args, **kwargs)
+
+    # -------------------------
+    # OFFLINE-safe overrides
+    # -------------------------
+
+    def list_files(self) -> List[str]:
+        if hasattr(self, "_offline"):
+            return self._offline.list_files()
+        return super().list_files()
+
+    def config_exists(self, config: str) -> bool:
+        if hasattr(self, "_offline"):
+            return self._offline.latest_by_config_name(config) is not None
+        return super().config_exists(config)
+
+    def md5_stored(self, abs_path: str) -> bool:
+        # offline mode doesn't have a DB md5 index for arbitrary paths; just behave conservatively
+        if hasattr(self, "_offline"):
+            return False
+        return super().md5_stored(abs_path)
+
+    def test_find(self) -> None:
+        if hasattr(self, "_offline"):
+            # simple sanity: must be able to list at least 1 file
+            _ = self._offline.list_files()
+            return
+        return super().test_find()
 
     def download_single(self, config_name: str, human_readable_file_name=False):
         """Download the config_name if it exists.
@@ -331,6 +376,13 @@ class MongoDownloader(GridFsInterfaceMongo):
         :return: str, the absolute path of the file requested
 
         """
+        # Offline path (sqlite-backed GridFS index)
+        if hasattr(self, "_offline"):
+            return self._offline.download_single(
+                config_name,
+                human_readable_file_name=human_readable_file_name,
+            )
+
         if self.config_exists(config_name):
             # Query by name
             query = self.get_query_config(config_name)
@@ -513,6 +565,22 @@ class APIDownloader(GridFsInterfaceAPI):
 
         self.storage_options: Tuple[str, ...] = store_files_at
 
+        # Offline sqlite backend support (reuse utilix.sqlite_backend.OfflineGridFS)
+        try:
+            sqlite_cfg = _load_sqlite_config()
+            sqlite_active = sqlite_cfg.sqlite_active()
+        except Exception:
+            sqlite_cfg = None
+            sqlite_active = False
+
+        if sqlite_active:
+            self._offline = OfflineGridFS(
+                sqlite_path=sqlite_cfg.sqlite_path,
+                offline_root=sqlite_cfg.offline_root,
+                cache_dirs=tuple(self.storage_options),
+                gridfs_db_name="files",
+            )
+
     def download_single(
         self,
         config_name: str,
@@ -520,6 +588,14 @@ class APIDownloader(GridFsInterfaceAPI):
         human_readable_file_name: bool = False,
     ) -> str:
         """Download the config_name if it exists."""
+        # Offline path (sqlite-backed GridFS index)
+        if hasattr(self, "_offline"):
+            return self._offline.download_single(
+                config_name,
+                human_readable_file_name=human_readable_file_name,
+                write_to=write_to,
+            )
+
         target_file_name = (
             config_name if human_readable_file_name else self.db.get_file_md5(config_name)
         )
