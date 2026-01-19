@@ -374,7 +374,8 @@ class OfflineSQLiteCollection:
         if "_id" in filter:
             row = self._conn.execute(
                 "SELECT COUNT(*) AS n FROM kv_collections \
-                    WHERE db_name=? AND coll_name=? AND doc_id=?",
+                    WHERE db_name=? AND coll_name=? AND doc_id=?"\
+                                                                 ,
                 (self.db_name, self._coll_name, str(filter["_id"])),
             ).fetchone()
             return int(row["n"]) if row else 0
@@ -422,11 +423,11 @@ class _OfflineCursor:
         return self
 
     def skip(self, n):
-        self._docs = self._docs[int(n):]
+        self._docs = self._docs[int(n) :]
         return self
 
     def limit(self, n):
-        self._docs = self._docs[:int(n)]
+        self._docs = self._docs[: int(n)]
         return self
 
     def __iter__(self):
