@@ -14,6 +14,7 @@ from utilix.utils import to_str_tuple
 from utilix import uconfig, logger
 from utilix.sqlite_backend import OfflineGridFS, _load_sqlite_config
 
+
 class GridFsBase:
     """Base class for GridFS operations."""
 
@@ -375,7 +376,6 @@ class MongoDownloader(GridFsInterfaceMongo):
         :return: str, the absolute path of the file requested
 
         """
-
         # Offline path (sqlite-backed GridFS index)
         if hasattr(self, "_offline"):
             return self._offline.download_single(
@@ -581,7 +581,6 @@ class APIDownloader(GridFsInterfaceAPI):
                 gridfs_db_name="files",
             )
 
-
     def download_single(
         self,
         config_name: str,
@@ -589,7 +588,6 @@ class APIDownloader(GridFsInterfaceAPI):
         human_readable_file_name: bool = False,
     ) -> str:
         """Download the config_name if it exists."""
-
         # Offline path (sqlite-backed GridFS index)
         if hasattr(self, "_offline"):
             return self._offline.download_single(

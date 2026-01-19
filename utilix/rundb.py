@@ -17,6 +17,7 @@ if uconfig is not None:  # type: ignore
     PREFIX = uconfig.get("RunDB", "rundb_api_url", fallback=None)  # type: ignore
     BASE_HEADERS = {"Content-Type": "application/json", "Cache-Control": "no-cache"}
 
+
 class NewTokenError(Exception):
     pass
 
@@ -591,7 +592,9 @@ def _collection(experiment, collection, url=None, user=None, password=None, data
     return db[collection]
 
 
-def _sqlite_collection(experiment: str, sqlite_config: SQLiteConfig, collection: str = "runs", **kwargs):
+def _sqlite_collection(
+    experiment: str, sqlite_config: SQLiteConfig, collection: str = "runs", **kwargs
+):
     database = kwargs.pop("database", None)
     if database is None:
         database = uconfig.get("RunDB", f"{experiment}_database")
@@ -602,6 +605,7 @@ def _sqlite_collection(experiment: str, sqlite_config: SQLiteConfig, collection:
         coll_name=collection,
         compression=sqlite_config.compression,
     )
+
 
 def xent_collection(collection="runs", **kwargs):
     sqlite_config = _load_sqlite_config()

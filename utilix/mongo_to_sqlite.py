@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Dump selected MongoDB collections + GridFS into local SQLite(s).
+"""Dump selected MongoDB collections + GridFS into local SQLite(s).
 
 NEW:
 - xedocs:* is dumped into a separate SQLite file (xedocs.sqlite) with
@@ -12,6 +11,7 @@ Spec file examples:
     files:GRIDFS
     xedocs:ALL
     corrections:ALL
+
 """
 
 import argparse
@@ -33,6 +33,7 @@ from bson.objectid import ObjectId
 # -------------------------
 # Compression helpers
 # -------------------------
+
 
 def _compressor():
     try:
@@ -67,6 +68,7 @@ COMP_ALGO, compress_bytes, _ = _compressor()
 # Spec parsing
 # -------------------------
 
+
 @dataclass(frozen=True)
 class SpecItem:
     db: str
@@ -93,10 +95,12 @@ def parse_spec_lines(lines: Iterable[str]) -> List[SpecItem]:
 # Mongo connection (utilix-friendly)
 # -------------------------
 
+
 def get_utilix_mongo_uri(experiment: str) -> str:
-    """
-    Mirrors utilix._collection style:
-      mongodb://{user}:{password}@{url}
+    """Mirrors utilix._collection style:
+
+    mongodb://{user}:{password}@{url}
+
     """
     from utilix import uconfig  # type: ignore
 
@@ -188,14 +192,14 @@ CREATE INDEX IF NOT EXISTS idx_gridfs_configname ON gridfs_files(db_name, config
 
 
 def _schema_sql_xedocs_table(table: str, extra_label_cols: List[str]) -> str:
-    """
-    Create one table per xedocs collection.
+    """Create one table per xedocs collection.
 
     We keep a stable set of "core" columns (id/version/time/value/full doc), and
     *also* create additional TEXT columns for any label fields we discover from
     sampling documents in that collection.
 
     Note: extra label columns are quoted to tolerate odd names.
+
     """
 
     def q(name: str) -> str:
@@ -215,7 +219,17 @@ def _schema_sql_xedocs_table(table: str, extra_label_cols: List[str]) -> str:
 
     # Discovered label columns (TEXT)
     for c in extra_label_cols:
-        if c in {'_id', 'version', 'time_ns', 'time_left_ns', 'time_right_ns', 'created_date_ns', 'value_num', 'value_json', 'doc_bson_z'}:
+        if c in {
+            "_id",
+            "version",
+            "time_ns",
+            "time_left_ns",
+            "time_right_ns",
+            "created_date_ns",
+            "value_num",
+            "value_json",
+            "doc_bson_z",
+        }:
             continue
         cols.append(f"{q(c)} TEXT")
 
@@ -233,12 +247,12 @@ def _schema_sql_xedocs_table(table: str, extra_label_cols: List[str]) -> str:
 
     # Optional label indexes (keep this small to avoid DB bloat)
     preferred = [
-        'algorithm',
-        'config_name',
-        'detector',
-        'source',
-        'pmt',
-        'gain_model',
+        "algorithm",
+        "config_name",
+        "detector",
+        "source",
+        "pmt",
+        "gain_model",
     ]
 
     present = set(extra_label_cols)
@@ -267,6 +281,7 @@ CREATE TABLE IF NOT EXISTS {q(table)} (
 # -------------------------
 # Utilities
 # -------------------------
+
 
 def ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
@@ -299,6 +314,7 @@ def to_utc_ns(dtobj) -> Optional[int]:
         # treat naive as UTC
         if getattr(dtobj, "tzinfo", None) is None:
             import datetime as dt
+
             dtobj = dtobj.replace(tzinfo=dt.timezone.utc)
         return int(dtobj.timestamp() * 1_000_000_000)
     except Exception:
@@ -327,6 +343,7 @@ def list_collection_names_safe(db: pymongo.database.Database) -> List[str]:
 # -------------------------
 # Dump logic (generic -> rundb.sqlite kv_collections)
 # -------------------------
+
 
 def dump_generic_collection(
     mongo_db: pymongo.database.Database,
@@ -389,7 +406,9 @@ def dump_xenonnt_runs_index(
     cur = coll.find({}, no_cursor_timeout=True, batch_size=batch_size)
     n = 0
     buf_kv: List[Tuple[str, str, str, bytes]] = []
-    buf_idx: List[Tuple[str, str, Optional[int], Optional[str], Optional[int], Optional[int], Optional[str]]] = []
+    buf_idx: List[
+        Tuple[str, str, Optional[int], Optional[str], Optional[int], Optional[int], Optional[str]]
+    ] = []
 
     ins_kv = "INSERT OR REPLACE INTO kv_collections(db_name, coll_name, doc_id, doc_bson_z) VALUES (?,?,?,?)"
     ins_idx = """
@@ -409,7 +428,12 @@ def dump_xenonnt_runs_index(
 
         name = doc.get("name") or doc.get("run_name") or doc.get("runName")
 
-        start = doc.get("start") or doc.get("start_time") or doc.get("startTime") or doc.get("starttime")
+        start = (
+            doc.get("start")
+            or doc.get("start_time")
+            or doc.get("startTime")
+            or doc.get("starttime")
+        )
         end = doc.get("end") or doc.get("end_time") or doc.get("endTime") or doc.get("endtime")
 
         start_u = to_unix_seconds(start)
@@ -431,7 +455,17 @@ def dump_xenonnt_runs_index(
         blob = pack_and_compress(doc)
 
         buf_kv.append((out_db_name, runs_coll_name, doc_id, blob))
-        buf_idx.append((out_db_name, doc_id, number_i, str(name) if name is not None else None, start_u, end_u, tags_json))
+        buf_idx.append(
+            (
+                out_db_name,
+                doc_id,
+                number_i,
+                str(name) if name is not None else None,
+                start_u,
+                end_u,
+                tags_json,
+            )
+        )
         n += 1
 
         if len(buf_kv) >= batch_size:
@@ -521,7 +555,9 @@ def dump_gridfs_db(
 
             with tmp_path.open("wb") as out_f:
                 expected_n = 0
-                ch_cur = chunks_coll.find({"files_id": file_id}, no_cursor_timeout=True).sort("n", 1)
+                ch_cur = chunks_coll.find({"files_id": file_id}, no_cursor_timeout=True).sort(
+                    "n", 1
+                )
                 wrote = 0
                 for ch in ch_cur:
                     n_chunk = int(ch["n"])
@@ -579,7 +615,6 @@ def dump_gridfs_db(
 
 def _xedocs_extract(doc: dict, label_cols: List[str]) -> Dict[str, Any]:
     """Extract core xedocs fields + discovered label columns."""
-
     out: Dict[str, Any] = {}
 
     out["_id"] = oid_to_str(doc.get("_id"))
@@ -617,7 +652,16 @@ def _xedocs_extract(doc: dict, label_cols: List[str]) -> Dict[str, Any]:
 
     # discovered labels (TEXT)
     for k in label_cols:
-        if k in ("_id", "version", "time", "created_date", "createdDate", "value", "comments", "reviews"):
+        if k in (
+            "_id",
+            "version",
+            "time",
+            "created_date",
+            "createdDate",
+            "value",
+            "comments",
+            "reviews",
+        ):
             continue
         val = doc.get(k, None)
         if val is None:
@@ -637,7 +681,6 @@ def _xedocs_extract(doc: dict, label_cols: List[str]) -> Dict[str, Any]:
     return out
 
 
-
 def dump_xedocs_collection_to_tables(
     mongo_db: pymongo.database.Database,
     coll_name: str,
@@ -647,11 +690,12 @@ def dump_xedocs_collection_to_tables(
     sample_n: int = 1000,
 ) -> int:
     """Dump xedocs.<coll> into xedocs.sqlite table <coll> with auto-discovered label columns."""
-
     coll = mongo_db[coll_name]
     table = coll_name
 
-    logger.info(f"[mongo] dumping xedocs.{coll_name} -> xedocs.sqlite table '{table}' (auto-discover labels)")
+    logger.info(
+        f"[mongo] dumping xedocs.{coll_name} -> xedocs.sqlite table '{table}' (auto-discover labels)"
+    )
 
     # ---------
     # 1) Discover label columns from a sample of docs
@@ -668,7 +712,9 @@ def dump_xedocs_collection_to_tables(
 
     label_cols_set = set()
     try:
-        sample_cursor = coll.find({}, no_cursor_timeout=True, batch_size=min(batch_size, 500)).limit(sample_n)
+        sample_cursor = coll.find(
+            {}, no_cursor_timeout=True, batch_size=min(batch_size, 500)
+        ).limit(sample_n)
         for d in sample_cursor:
             for k in d.keys():
                 if k in skip_keys:
@@ -677,7 +723,9 @@ def dump_xedocs_collection_to_tables(
                 # (it will be ignored if duplicated)
                 label_cols_set.add(k)
     except Exception as e:
-        logger.warning(f"[mongo] xedocs label discovery failed for {coll_name}: {type(e).__name__}: {e}")
+        logger.warning(
+            f"[mongo] xedocs label discovery failed for {coll_name}: {type(e).__name__}: {e}"
+        )
 
     # Deterministic order
     label_cols = sorted(label_cols_set)
@@ -708,7 +756,22 @@ def dump_xedocs_collection_to_tables(
 
     # Only keep label columns that are not core columns and are valid SQL identifiers when quoted
     # (we always quote, so any name is okay)
-    extra_cols = [c for c in label_cols if c not in {"_id", "version", "time_ns", "time_left_ns", "time_right_ns", "created_date_ns", "value_num", "value_json", "doc_bson_z"}]
+    extra_cols = [
+        c
+        for c in label_cols
+        if c
+        not in {
+            "_id",
+            "version",
+            "time_ns",
+            "time_left_ns",
+            "time_right_ns",
+            "created_date_ns",
+            "value_num",
+            "value_json",
+            "doc_bson_z",
+        }
+    ]
 
     all_cols = core_cols + extra_cols + ["doc_bson_z"]
 
@@ -747,6 +810,7 @@ def dump_xedocs_collection_to_tables(
 # Main
 # -------------------------
 
+
 def setup_logger(verbosity: int) -> logging.Logger:
     lvl = logging.INFO if verbosity == 0 else (logging.DEBUG if verbosity >= 1 else logging.INFO)
     logger = logging.getLogger("dump_mongo_offline")
@@ -764,13 +828,36 @@ def setup_logger(verbosity: int) -> logging.Logger:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True, help="Output directory for offline cache")
-    ap.add_argument("--experiment", default="xent", choices=["xent", "xe1t"], help="utilix experiment")
-    ap.add_argument("--mongo-uri", default=None, help="Override Mongo URI (otherwise uses utilix uconfig)")
-    ap.add_argument("--spec", required=True, help="Spec file with lines like 'xenonnt:runs', 'xedocs:ALL', 'files:GRIDFS'")
-    ap.add_argument("--sqlite-name", default="rundb.sqlite", help="SQLite filename under --out for runs/gridfs/kv")
-    ap.add_argument("--xedocs-sqlite-name", default="xedocs.sqlite", help="SQLite filename under --out for xedocs tables")
-    ap.add_argument("--batch-size", type=int, default=2000, help="Batch size for Mongo cursor and SQLite inserts")
-    ap.add_argument("-v", "--verbose", action="count", default=0, help="Increase logging verbosity (-v/-vv)")
+    ap.add_argument(
+        "--experiment", default="xent", choices=["xent", "xe1t"], help="utilix experiment"
+    )
+    ap.add_argument(
+        "--mongo-uri", default=None, help="Override Mongo URI (otherwise uses utilix uconfig)"
+    )
+    ap.add_argument(
+        "--spec",
+        required=True,
+        help="Spec file with lines like 'xenonnt:runs', 'xedocs:ALL', 'files:GRIDFS'",
+    )
+    ap.add_argument(
+        "--sqlite-name",
+        default="rundb.sqlite",
+        help="SQLite filename under --out for runs/gridfs/kv",
+    )
+    ap.add_argument(
+        "--xedocs-sqlite-name",
+        default="xedocs.sqlite",
+        help="SQLite filename under --out for xedocs tables",
+    )
+    ap.add_argument(
+        "--batch-size",
+        type=int,
+        default=2000,
+        help="Batch size for Mongo cursor and SQLite inserts",
+    )
+    ap.add_argument(
+        "-v", "--verbose", action="count", default=0, help="Increase logging verbosity (-v/-vv)"
+    )
 
     ap.add_argument(
         "--runs-drop-field",
@@ -779,7 +866,11 @@ def main() -> None:
         help="Drop a field from xenonnt:runs docs before storing (repeatable).",
     )
 
-    ap.add_argument("--gridfs-only-filenames", default=None, help="Text file with one filename per line to dump from GridFS")
+    ap.add_argument(
+        "--gridfs-only-filenames",
+        default=None,
+        help="Text file with one filename per line to dump from GridFS",
+    )
     args = ap.parse_args()
 
     logger = setup_logger(args.verbose)
@@ -790,7 +881,9 @@ def main() -> None:
     spec_path = Path(args.spec).resolve()
     spec_items = parse_spec_lines(spec_path.read_text().splitlines())
 
-    logger.info(f"Connecting to Mongo (experiment={args.experiment}, uri_override={bool(args.mongo_uri)})")
+    logger.info(
+        f"Connecting to Mongo (experiment={args.experiment}, uri_override={bool(args.mongo_uri)})"
+    )
     client = get_mongo_client(args.experiment, uri_override=args.mongo_uri)
 
     # rundb.sqlite
@@ -806,7 +899,11 @@ def main() -> None:
 
     gridfs_only = None
     if args.gridfs_only_filenames:
-        gridfs_only = [ln.strip() for ln in Path(args.gridfs_only_filenames).read_text().splitlines() if ln.strip()]
+        gridfs_only = [
+            ln.strip()
+            for ln in Path(args.gridfs_only_filenames).read_text().splitlines()
+            if ln.strip()
+        ]
 
     manifest = {
         "format": "offline-mongo-sqlite-v2",

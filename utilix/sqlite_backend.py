@@ -13,13 +13,16 @@ import pymongo
 
 OFFLINE_DEBUG = os.environ.get("OFFLINE_DEBUG", "0") not in ("0", "", "false", "False")
 
+
 def _env_bool(name: str, default: str = "0") -> bool:
     v = os.environ.get(name, default)
     return v not in ("0", "", "false", "False", "no", "No", "NO")
 
+
 def _dbg(msg):
     if OFFLINE_DEBUG:
         logging.debug(f"[offline-debug] {msg}")
+
 
 def _dbg_stack(tag, n=6):
     if OFFLINE_DEBUG:
@@ -27,11 +30,13 @@ def _dbg_stack(tag, n=6):
         logging.debug("".join(traceback.format_stack(limit=n)))
         logging.debug(f"[offline-debug] --- end stack ({tag}) ---")
 
+
 def block(msg: str, cfg: SQLiteConfig) -> None:
     if cfg.hard:
         raise RuntimeError(f"[offline-hard] blocked: {msg}")
     _dbg(f"WARNING: {msg}")
     _dbg_stack("blocked")
+
 
 @dataclass(frozen=True)
 class SQLiteConfig:
@@ -53,6 +58,7 @@ class SQLiteConfig:
     def sqlite_active(self) -> bool:
         return self.rundb_active() and self.xedocs_active()
 
+
 def _load_sqlite_config() -> SQLiteConfig:
     sqp = os.environ.get("RUNDB_SQLITE_PATH", "").strip()
     rundb_sqlite_path = Path(sqp).expanduser().resolve() if sqp else None
@@ -60,12 +66,14 @@ def _load_sqlite_config() -> SQLiteConfig:
     xsp = os.environ.get("XEDOCS_SQLITE_PATH", "").strip()
     xedocs_sqlite_path = Path(xsp).expanduser().resolve() if xsp else None
 
-    offline_root = rundb_sqlite_path.parent if (rundb_sqlite_path and rundb_sqlite_path.exists()) else None
+    offline_root = (
+        rundb_sqlite_path.parent if (rundb_sqlite_path and rundb_sqlite_path.exists()) else None
+    )
 
     debug = _env_bool("OFFLINE_DEBUG")
-    hard  = _env_bool("OFFLINE_HARD")
+    hard = _env_bool("OFFLINE_HARD")
     stack = _env_bool("OFFLINE_STACK")
-    spy   = _env_bool("PYMONGO_SPY")
+    spy = _env_bool("PYMONGO_SPY")
 
     return SQLiteConfig(
         rundb_sqlite_path=rundb_sqlite_path,
@@ -91,13 +99,14 @@ class GridFSRow:
 
 
 class OfflineGridFS:
-    """
-    Minimal offline replacement for utilix.mongo_storage.MongoDownloader / APIDownloader behavior:
+    """Minimal offline replacement for utilix.mongo_storage.MongoDownloader / APIDownloader
+    behavior:
 
     - query SQLite table gridfs_files by config_name
     - pick the latest by uploadDate
     - stage/copy the blob into a local cache folder named by md5
     - return the staged path
+
     """
 
     def __init__(
@@ -139,7 +148,8 @@ class OfflineGridFS:
             WHERE db_name = ? AND config_name = ?
             ORDER BY uploadDate DESC
             LIMIT 1
-            """,
+            """\
+               ,
             (self.gridfs_db_name, config_name),
         ).fetchone()
 
@@ -149,7 +159,9 @@ class OfflineGridFS:
         # Some older entries might have NULL md5; that's not usable for caching-by-md5.
         md5 = row["md5"]
         if md5 is None:
-            raise RuntimeError(f"Found GridFS entry for {config_name} but md5 is NULL in sqlite index")
+            raise RuntimeError(
+                f"Found GridFS entry for {config_name} but md5 is NULL in sqlite index"
+            )
 
         return GridFSRow(
             db_name=row["db_name"],
@@ -170,11 +182,11 @@ class OfflineGridFS:
         human_readable_file_name: bool = False,
         write_to: Optional[str | Path] = None,
     ) -> str:
-        """
-        Return absolute path to a staged file.
-        Default behavior matches utilix: store under md5 in a cache dir.
-        """
+        """Return absolute path to a staged file.
 
+        Default behavior matches utilix: store under md5 in a cache dir.
+
+        """
         _dbg(f"OfflineGridFS.download_single('{config_name}') [SQLITE]")
 
         entry = self.latest_by_config_name(config_name)
@@ -224,26 +236,28 @@ def smoke_test(
     g.close()
 
 
-
-
 # ---- OFFLINE RUNDB COLLECTION (SQLite-backed) ----
 
 from bson import BSON
 
+
 def _decompressor(algo: str):
     if algo == "zstd":
         import zstandard as zstd  # type: ignore
+
         dctx = zstd.ZstdDecompressor()
         return dctx.decompress
     elif algo == "zlib":
         import zlib
+
         return zlib.decompress
     else:
         raise ValueError(f"Unknown compression algo: {algo}")
 
 
 class OfflineMongoClient:
-    """Dummy client to satisfy: collection.database.client"""
+    """Dummy client to satisfy: collection.database.client."""
+
     def close(self):
         return
 
@@ -255,11 +269,12 @@ class OfflineMongoDatabase:
 
 
 class OfflineSQLiteCollection:
-    """
-    Minimal pymongo.collection.Collection-like wrapper backed by our sqlite cache.
+    """Minimal pymongo.collection.Collection-like wrapper backed by our sqlite cache.
+
     Provides the attribute chain expected by straxen.storage.rundb.RunDB:
         collection.database.client
     And a few commonly-used methods: find_one, find, count_documents.
+
     """
 
     def __init__(
@@ -271,7 +286,7 @@ class OfflineSQLiteCollection:
     ):
         self.sqlite_path = Path(sqlite_path).resolve()
         self.db_name = str(db_name)
-        self.name = str(coll_name)          # pymongo Collection has .name
+        self.name = str(coll_name)  # pymongo Collection has .name
         self._coll_name = str(coll_name)
 
         self._conn = sqlite3.connect(str(self.sqlite_path))
@@ -337,7 +352,7 @@ class OfflineSQLiteCollection:
         if "_id" in filter:
             try:
                 doc = self._get_by_id(str(filter["_id"]))
-                return _OfflineCursor([doc])   # small list OK
+                return _OfflineCursor([doc])  # small list OK
             except KeyError:
                 return _OfflineCursor([])
 
@@ -396,8 +411,10 @@ class OfflineSQLiteCollection:
                 break
         return out
 
+
 class _OfflineCursor:
     """Small in-memory cursor (safe only for tiny result sets)."""
+
     def __init__(self, docs):
         self._docs = list(docs)
 
@@ -407,11 +424,11 @@ class _OfflineCursor:
         return self
 
     def skip(self, n):
-        self._docs = self._docs[int(n):]
+        self._docs = self._docs[int(n) :]
         return self
 
     def limit(self, n):
-        self._docs = self._docs[:int(n)]
+        self._docs = self._docs[: int(n)]
         return self
 
     def __iter__(self):
@@ -420,6 +437,7 @@ class _OfflineCursor:
 
 class _OfflineStreamingCursor:
     """Streaming cursor: does NOT materialize docs."""
+
     def __init__(self, iterator):
         self._it = iterator
         self._skip = 0
@@ -464,12 +482,15 @@ class _OfflineStreamingCursor:
                         if i >= self._limit:
                             break
                         yield d
+
                 return gen()
 
         # If sort requested, we must materialize.
         # We materialize only up to limit if provided, else this is dangerous.
         if self._limit is None:
-            raise RuntimeError("Offline streaming cursor cannot sort without limit (would load everything).")
+            raise RuntimeError(
+                "Offline streaming cursor cannot sort without limit (would load everything)."
+            )
 
         docs = []
         for i, d in enumerate(it):
@@ -482,9 +503,9 @@ class _OfflineStreamingCursor:
         return iter(docs)
 
 
-
 # Add pymongo spy
 _orig_mc = pymongo.MongoClient
+
 
 class MongoClientSpy(_orig_mc):
     def __init__(self, *args, **kwargs):
@@ -492,5 +513,6 @@ class MongoClientSpy(_orig_mc):
         if cfg.spy:
             block(f"pymongo.MongoClient CREATED args={args} kwargs_keys={list(kwargs.keys())}", cfg)
         super().__init__(*args, **kwargs)
+
 
 pymongo.MongoClient = MongoClientSpy
