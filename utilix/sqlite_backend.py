@@ -148,7 +148,7 @@ class OfflineGridFS:
             WHERE db_name = ? AND config_name = ?
             ORDER BY uploadDate DESC
             LIMIT 1
-            """, 
+            """,
             (self.gridfs_db_name, config_name),
         ).fetchone()
 
