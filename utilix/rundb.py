@@ -9,14 +9,13 @@ from typing import Tuple, Dict
 from warnings import warn
 import time
 
-from . import uconfig, logger, io
-
+from . import uconfig, logger, io, sqlite_backend
+from .sqlite_backend import OfflineSQLiteCollection, SQLiteConfig, _load_sqlite_config
 
 # Config the logger:
 if uconfig is not None:  # type: ignore
     PREFIX = uconfig.get("RunDB", "rundb_api_url", fallback=None)  # type: ignore
     BASE_HEADERS = {"Content-Type": "application/json", "Cache-Control": "no-cache"}
-
 
 class NewTokenError(Exception):
     pass
@@ -592,8 +591,24 @@ def _collection(experiment, collection, url=None, user=None, password=None, data
     return db[collection]
 
 
+def _sqlite_collection(experiment: str, sqlite_config: SQLiteConfig, collection: str = "runs", **kwargs):
+    database = kwargs.pop("database", None)
+    if database is None:
+        database = uconfig.get("RunDB", f"{experiment}_database")
+
+    return OfflineSQLiteCollection(
+        sqlite_path=sqlite_config.sqlite_path,
+        db_name=database,
+        coll_name=collection,
+        compression=sqlite_config.compression,
+    )
+
 def xent_collection(collection="runs", **kwargs):
-    return _collection("xent", collection, **kwargs)
+    sqlite_config = _load_sqlite_config()
+    if sqlite_config.sqlite_active():
+        return _sqlite_collection("xent", sqlite_config, collection, **kwargs)
+    else:
+        return _collection("xent", collection, **kwargs)
 
 
 def xent_collection_admin(collection="runs", **kwargs):
