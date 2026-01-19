@@ -6,10 +6,10 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Tuple
-import os
 import traceback
 import logging
 import pymongo
+from bson import BSON
 
 OFFLINE_DEBUG = os.environ.get("OFFLINE_DEBUG", "0") not in ("0", "", "false", "False")
 
@@ -148,8 +148,7 @@ class OfflineGridFS:
             WHERE db_name = ? AND config_name = ?
             ORDER BY uploadDate DESC
             LIMIT 1
-            """\
-               ,
+            """, 
             (self.gridfs_db_name, config_name),
         ).fetchone()
 
@@ -237,8 +236,6 @@ def smoke_test(
 
 
 # ---- OFFLINE RUNDB COLLECTION (SQLite-backed) ----
-
-from bson import BSON
 
 
 def _decompressor(algo: str):
@@ -376,7 +373,8 @@ class OfflineSQLiteCollection:
 
         if "_id" in filter:
             row = self._conn.execute(
-                "SELECT COUNT(*) AS n FROM kv_collections WHERE db_name=? AND coll_name=? AND doc_id=?",
+                "SELECT COUNT(*) AS n FROM kv_collections \
+                    WHERE db_name=? AND coll_name=? AND doc_id=?",
                 (self.db_name, self._coll_name, str(filter["_id"])),
             ).fetchone()
             return int(row["n"]) if row else 0
@@ -424,11 +422,11 @@ class _OfflineCursor:
         return self
 
     def skip(self, n):
-        self._docs = self._docs[int(n) :]
+        self._docs = self._docs[int(n):]
         return self
 
     def limit(self, n):
-        self._docs = self._docs[: int(n)]
+        self._docs = self._docs[:int(n)]
         return self
 
     def __iter__(self):

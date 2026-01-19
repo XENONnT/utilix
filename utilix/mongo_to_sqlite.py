@@ -17,7 +17,6 @@ Spec file examples:
 import argparse
 import json
 import logging
-import os
 import sqlite3
 import sys
 import time
@@ -241,8 +240,12 @@ def _schema_sql_xedocs_table(table: str, extra_label_cols: List[str]) -> str:
     # - time interval lookup:  version + interval
     # - common labels (if present)
     index_sql = [
-        f"CREATE INDEX IF NOT EXISTS {q('idx_' + table + '_version_time')} ON {q(table)}({q('version')}, {q('time_ns')});",
-        f"CREATE INDEX IF NOT EXISTS {q('idx_' + table + '_version_interval')} ON {q(table)}({q('version')}, {q('time_left_ns')}, {q('time_right_ns')});",
+        f"CREATE INDEX IF NOT EXISTS \
+            {q('idx_' + table + '_version_time')} \
+            ON {q(table)}({q('version')}, {q('time_ns')});",
+        f"CREATE INDEX IF NOT EXISTS \
+            {q('idx_' + table + '_version_interval')} \
+            ON {q(table)}({q('version')}, {q('time_left_ns')}, {q('time_right_ns')});",
     ]
 
     # Optional label indexes (keep this small to avoid DB bloat)
@@ -260,7 +263,9 @@ def _schema_sql_xedocs_table(table: str, extra_label_cols: List[str]) -> str:
     for lab in preferred:
         if lab in present:
             index_sql.append(
-                f"CREATE INDEX IF NOT EXISTS {q('idx_' + table + '_version_' + lab)} ON {q(table)}({q('version')}, {q(lab)});"
+                f"CREATE INDEX IF NOT EXISTS \
+                    {q('idx_' + table + '_version_' + lab)} \
+                        ON {q(table)}({q('version')}, {q(lab)});"
             )
             n_extra += 1
             if n_extra >= 6:
@@ -365,7 +370,8 @@ def dump_generic_collection(
     n = 0
     buf: List[Tuple[str, str, str, bytes]] = []
 
-    insert_sql = "INSERT OR REPLACE INTO kv_collections(db_name, coll_name, doc_id, doc_bson_z) VALUES (?,?,?,?)"
+    insert_sql = "INSERT OR REPLACE INTO kv_collections(db_name, coll_name, doc_id, doc_bson_z) \
+        VALUES (?,?,?,?)"
 
     for doc in cur:
         _id = doc.get("_id")
@@ -410,7 +416,8 @@ def dump_xenonnt_runs_index(
         Tuple[str, str, Optional[int], Optional[str], Optional[int], Optional[int], Optional[str]]
     ] = []
 
-    ins_kv = "INSERT OR REPLACE INTO kv_collections(db_name, coll_name, doc_id, doc_bson_z) VALUES (?,?,?,?)"
+    ins_kv = "INSERT OR REPLACE INTO kv_collections(db_name, coll_name, doc_id, doc_bson_z)\
+        VALUES (?,?,?,?)"
     ins_idx = """
       INSERT OR REPLACE INTO runs_index(db_name, doc_id, number, name, start, end, tags_json)
       VALUES (?,?,?,?,?,?,?)
@@ -694,7 +701,7 @@ def dump_xedocs_collection_to_tables(
     table = coll_name
 
     logger.info(
-        f"[mongo] dumping xedocs.{coll_name} -> xedocs.sqlite table '{table}' (auto-discover labels)"
+        f"[mongo] dumping xedocs.{coll_name} -> xedocs.sqlite table '{table}' (auto-discover)"
     )
 
     # ---------
@@ -779,7 +786,9 @@ def dump_xedocs_collection_to_tables(
         return '"' + name.replace('"', '""') + '"'
 
     placeholders = ",".join(["?"] * len(all_cols))
-    ins = f"INSERT OR REPLACE INTO {q(table)}({','.join(q(c) for c in all_cols)}) VALUES ({placeholders})"
+    ins = f"INSERT OR REPLACE INTO \
+        {q(table)}({','.join(q(c) for c in all_cols)}) \
+        VALUES ({placeholders})"
 
     cur = coll.find({}, no_cursor_timeout=True, batch_size=batch_size)
 

@@ -9,7 +9,7 @@ from typing import Tuple, Dict
 from warnings import warn
 import time
 
-from . import uconfig, logger, io, sqlite_backend
+from . import uconfig, logger, io
 from .sqlite_backend import OfflineSQLiteCollection, SQLiteConfig, _load_sqlite_config
 
 # Config the logger:
