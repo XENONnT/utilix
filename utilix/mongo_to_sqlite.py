@@ -418,7 +418,7 @@ def dump_xenonnt_runs_index(
 
     ins_kv = "INSERT OR REPLACE INTO kv_collections(db_name, coll_name, doc_id, doc_bson_z)"
     ins_kv += " VALUES (?,?,?,?)"
-    
+
     ins_idx = """
       INSERT OR REPLACE INTO runs_index(db_name, doc_id, number, name, start, end, tags_json)
       VALUES (?,?,?,?,?,?,?)
