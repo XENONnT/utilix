@@ -398,22 +398,7 @@ class DB:
 
     def get_rses(self, run_number, dtype, hash):
         data = self.get_data(run_number)
-        rses = []
-        for d in data:
-            assert (
-                "host" in d and "type" in d
-            ), f"invalid data-doc retrieved for {run_number} {dtype} {hash}"
-            # Did is only in rucio-cataloge, hence don't ask for it to
-            # be in all docs in data
-            if (
-                d["host"] == "rucio-catalogue"
-                and d["type"] == dtype
-                and hash in d["did"]
-                and d["status"] == "transferred"
-            ):
-                rses.append(d["location"])
-
-        return rses
+        return parse_rse(run_number, dtype, hash, data)
 
     # TODO
     def get_all_contexts(self):
@@ -649,3 +634,22 @@ def cmt_global_valid_range(global_version):
             if end < valid_range[1]:
                 valid_range[1] = end
     return valid_range
+
+
+def parse_rse(run_number, dtype, hash, data):
+    rses = []
+    for d in data:
+        assert (
+            "host" in d and "type" in d
+        ), f"invalid data-doc retrieved for {run_number} {dtype} {hash}"
+        # Did is only in rucio-cataloge, hence don't ask for it to
+        # be in all docs in data
+        if (
+            d["host"] == "rucio-catalogue"
+            and d["type"] == dtype
+            and hash in d["did"]
+            and d["status"] == "transferred"
+        ):
+            rses.append(d["location"])
+
+    return rses
