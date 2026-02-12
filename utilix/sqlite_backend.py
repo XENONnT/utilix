@@ -177,6 +177,7 @@ class OfflineGridFS:
     # sqlite queries
     # -----------------
     def latest_by_config_name(self, config_name: str) -> Optional[GridFSRow]:
+<<<<<<< HEAD
        row = self.conn.execute(
         """
         SELECT db_name, file_id, config_name, md5, length, uploadDate, blob_path
@@ -186,6 +187,18 @@ class OfflineGridFS:
         LIMIT 1""",
         (self.gridfs_db_name, config_name),
        ).fetchone()
+=======
+        row = self.conn.execute(
+            """
+            SELECT db_name, file_id, config_name, md5, length, uploadDate, blob_path
+            FROM gridfs_files
+            WHERE db_name = ? AND config_name = ?
+            ORDER BY uploadDate DESC
+            LIMIT 1"""\
+                      ,  # noqa: E502,E203
+            (self.gridfs_db_name, config_name),
+        ).fetchone()
+>>>>>>> 4f06c10a1c32706945a4021fca563bffdfb55344
 
         if row is None:
             return None
