@@ -111,7 +111,7 @@ class TestOfflineGridFS(unittest.TestCase):
         conn.execute(
             """INSERT INTO gridfs_files (db_name, file_id, config_name, md5, length, uploadDate,
             blob_path) VALUES (?, ?, ?, ?, ?, ?, ?)"""
-                                                                      ,
+                                                      ,
             (
                 "files",
                 "test_id",

@@ -261,9 +261,11 @@ def _schema_sql_xedocs_table(table: str, extra_label_cols: List[str]) -> str:
     n_extra = 0
     for lab in preferred:
         if lab in present:
-            index_sql.append(f"CREATE INDEX IF NOT EXISTS \
+            index_sql.append(
+                f"CREATE INDEX IF NOT EXISTS \
                     {q('idx_' + table + '_version_' + lab)} \
-                        ON {q(table)}({q('version')}, {q(lab)});")
+                        ON {q(table)}({q('version')}, {q(lab)});"
+            )
             n_extra += 1
             if n_extra >= 6:
                 break
