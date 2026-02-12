@@ -36,7 +36,7 @@ class TestSQLiteConfig(unittest.TestCase):
 
                 self.assertIsNotNone(cfg.rundb_sqlite_path)
                 self.assertIsNotNone(cfg.xedocs_sqlite_path)
-                # Use resolve() on both sides to handle symlinks (e.g., /var -> /private/var on macOS)
+                # Use resolve() to handle symlinks (e.g., /var -> /private/var)
                 self.assertEqual(cfg.rundb_sqlite_path.resolve(), rundb_path.resolve())
                 self.assertEqual(cfg.xedocs_sqlite_path.resolve(), xedocs_path.resolve())
                 self.assertTrue(cfg.rundb_active())
@@ -212,7 +212,8 @@ class TestOfflineSQLiteCollection(unittest.TestCase):
         compressed = zlib.compress(bson_data, level=6)
 
         conn.execute(
-            "INSERT INTO kv_collections (db_name, coll_name, doc_id, doc_bson_z) VALUES (?, ?, ?, ?)",
+            "INSERT INTO kv_collections "
+            "(db_name, coll_name, doc_id, doc_bson_z) VALUES (?, ?, ?, ?)",
             ("xenonnt", "runs", "test_id_123", compressed),
         )
 
@@ -328,7 +329,7 @@ class TestXentCollectionOffline(unittest.TestCase):
 
     def test_xent_collection_uses_sqlite_when_active(self):
         """Test that xent_collection uses SQLite when offline is active."""
-        from utilix.sqlite_backend import SQLiteConfig, OfflineSQLiteCollection
+        from utilix.sqlite_backend import OfflineSQLiteCollection
         from utilix.rundb import xent_collection
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -364,7 +365,7 @@ class TestXentCollectionOffline(unittest.TestCase):
             with patch("utilix.rundb._collection") as mock_collection:
                 mock_collection.return_value = MagicMock()
 
-                coll = xent_collection("runs")
+                _result = xent_collection("runs")  # noqa: F841
 
                 # Should call _collection (MongoDB) when offline is not active
                 mock_collection.assert_called_once()
