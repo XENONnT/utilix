@@ -183,8 +183,7 @@ class OfflineGridFS:
             FROM gridfs_files
             WHERE db_name = ? AND config_name = ?
             ORDER BY uploadDate DESC
-            LIMIT 1"""\
-                      ,
+            LIMIT 1""",
             (self.gridfs_db_name, config_name),
         ).fetchone()
 
@@ -552,7 +551,7 @@ class _OfflineStreamingCursor:
 _orig_mc = pymongo.MongoClient
 
 
-class MongoClientSpy(_orig_mc):
+class MongoClientSpy(_orig_mc):  # type: ignore[misc,valid-type]
     def __init__(self, *args, **kwargs):
         cfg = _load_sqlite_config()
         if cfg.spy:

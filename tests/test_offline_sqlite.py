@@ -109,9 +109,8 @@ class TestOfflineGridFS(unittest.TestCase):
             """
         )
         conn.execute(
-            """INSERT INTO gridfs_files (db_name, file_id, config_name, md5, length, uploadDate,
-            blob_path) VALUES (?, ?, ?, ?, ?, ?, ?)"""
-                                                      ,
+            """INSERT INTO gridfs_files (db_name, file_id, config_name, md5, length,
+                uploadDate, blob_path) VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (
                 "files",
                 "test_id",
@@ -189,20 +188,16 @@ class TestOfflineSQLiteCollection(unittest.TestCase):
 
         # Create database with kv_collections and runs_index tables
         conn = sqlite3.connect(str(self.db_path))
-        conn.execute(
-            """CREATE TABLE kv_collections ( db_name TEXT, coll_name TEXT, doc_id TEXT,
+        conn.execute("""CREATE TABLE kv_collections ( db_name TEXT, coll_name TEXT, doc_id TEXT,
 
             doc_bson_z BLOB )
 
-            """
-        )
-        conn.execute(
-            """CREATE TABLE runs_index ( db_name TEXT, number INTEGER,
+            """)
+        conn.execute("""CREATE TABLE runs_index ( db_name TEXT, number INTEGER,
 
             doc_id TEXT )
 
-            """
-        )
+            """)
 
         # Insert test document
         import zlib
