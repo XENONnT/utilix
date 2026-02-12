@@ -183,8 +183,7 @@ class OfflineGridFS:
             FROM gridfs_files
             WHERE db_name = ? AND config_name = ?
             ORDER BY uploadDate DESC
-            LIMIT 1"""\
-                      ,
+            LIMIT 1""",
             (self.gridfs_db_name, config_name),
         ).fetchone()
 
@@ -420,9 +419,8 @@ class OfflineSQLiteCollection:
 
         if "_id" in filter:
             row = self._conn.execute(
-                "SELECT COUNT(*) AS n FROM kv_collections \
-                    WHERE db_name=? AND coll_name=? AND doc_id=?"\
-                                                                 ,
+                "SELECT COUNT(*) AS n FROM kv_collections "
+                "WHERE db_name=? AND coll_name=? AND doc_id=?",
                 (self.db_name, self._coll_name, str(filter["_id"])),
             ).fetchone()
             return int(row["n"]) if row else 0
