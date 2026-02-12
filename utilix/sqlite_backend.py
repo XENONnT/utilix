@@ -1,5 +1,41 @@
 from __future__ import annotations
 
+"""SQLite offline backend for utilix.
+
+This module provides offline access to XENON RunDB and GridFS data using local
+SQLite databases. It allows analysis to continue when MongoDB is unreachable.
+
+Usage:
+    1. Generate SQLite files using mongo_to_sqlite.py (requires MongoDB access)
+    2. Set environment variables:
+        export RUNDB_SQLITE_PATH="/path/to/rundb.sqlite"
+        export XEDOCS_SQLITE_PATH="/path/to/xedocs.sqlite"
+    3. Use utilix normally - offline mode activates automatically
+
+Example:
+    >>> import os
+    >>> os.environ["RUNDB_SQLITE_PATH"] = "/data/rundb.sqlite"
+    >>> os.environ["XEDOCS_SQLITE_PATH"] = "/data/xedocs.sqlite"
+    >>> 
+    >>> from utilix import xent_collection
+    >>> runs = xent_collection("runs")  # Uses SQLite if files exist
+    >>> doc = runs.find_one({"number": 12345})
+
+Environment Variables:
+    RUNDB_SQLITE_PATH: Path to RunDB SQLite file (required)
+    XEDOCS_SQLITE_PATH: Path to xedocs SQLite file (required)
+    OFFLINE_COMP: Compression algorithm, 'zstd' or 'zlib' (default: 'zstd')
+    OFFLINE_DEBUG: Enable debug logging, '1' or '0' (default: '0')
+
+Classes:
+    SQLiteConfig: Configuration dataclass for offline mode
+    OfflineGridFS: GridFS-compatible offline file access
+    OfflineSQLiteCollection: pymongo-compatible offline collection access
+
+Functions:
+    _load_sqlite_config: Load configuration from environment variables
+"""
+
 import os
 import sqlite3
 import shutil
