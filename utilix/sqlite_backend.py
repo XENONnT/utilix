@@ -178,13 +178,9 @@ class OfflineGridFS:
     # -----------------
     def latest_by_config_name(self, config_name: str) -> Optional[GridFSRow]:
         row = self.conn.execute(
-            """
-            SELECT db_name, file_id, config_name, md5, length, uploadDate, blob_path
-            FROM gridfs_files
-            WHERE db_name = ? AND config_name = ?
-            ORDER BY uploadDate DESC
-            LIMIT 1"""\
-                      ,
+            "SELECT db_name, file_id, config_name, md5, length, uploadDate, blob_path "  # noqa: E501
+            "FROM gridfs_files WHERE db_name = ? AND config_name = ? "
+            "ORDER BY uploadDate DESC LIMIT 1",
             (self.gridfs_db_name, config_name),
         ).fetchone()
 
