@@ -328,7 +328,7 @@ class MongoDownloader(GridFsInterfaceMongo):
 
         if sqlite_active:
             self._offline = OfflineGridFS(
-                sqlite_path=sqlite_cfg.sqlite_path,
+                sqlite_path=sqlite_cfg.rundb_sqlite_path,
                 offline_root=sqlite_cfg.offline_root,
                 cache_dirs=tuple(self.storage_options),
                 gridfs_db_name="files",
@@ -575,7 +575,7 @@ class APIDownloader(GridFsInterfaceAPI):
 
         if sqlite_active:
             self._offline = OfflineGridFS(
-                sqlite_path=sqlite_cfg.sqlite_path,
+                sqlite_path=sqlite_cfg.rundb_sqlite_path,
                 offline_root=sqlite_cfg.offline_root,
                 cache_dirs=tuple(self.storage_options),
                 gridfs_db_name="files",

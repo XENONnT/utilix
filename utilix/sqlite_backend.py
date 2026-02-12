@@ -320,14 +320,19 @@ class OfflineSQLiteCollection:
         """
         Minimal behavior:
           - if filter contains _id, return that doc
+          - if filter contains 'number' (for runs collection), look it up
           - else return first doc (used as connectivity test)
         """
         filter = filter or {}
 
         # _id special case
         if "_id" in filter:
-            ...
+            try:
+                return self._get_by_id(str(filter["_id"]))
+            except KeyError:
+                return None
 
+        # Special case for runs collection with number filter
         if self._coll_name == "runs" and "number" in filter:
             number = int(filter["number"])
             row = self._conn.execute(
@@ -338,6 +343,12 @@ class OfflineSQLiteCollection:
                 return None
             return self._get_by_id(row["doc_id"])
 
+        # Default: return first doc (connectivity test)
+        row = self._conn.execute(
+            "SELECT doc_bson_z FROM kv_collections WHERE db_name=? AND coll_name=? LIMIT 1",
+            (self.db_name, self._coll_name),
+        ).fetchone()
+        
         if row is None:
             return None
         return self._decode_row(row)

@@ -600,7 +600,7 @@ def _sqlite_collection(
         database = uconfig.get("RunDB", f"{experiment}_database")
 
     return OfflineSQLiteCollection(
-        sqlite_path=sqlite_config.sqlite_path,
+        sqlite_path=sqlite_config.rundb_sqlite_path,
         db_name=database,
         coll_name=collection,
         compression=sqlite_config.compression,
