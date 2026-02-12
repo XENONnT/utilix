@@ -28,7 +28,6 @@ import pymongo
 from bson import BSON
 from bson.objectid import ObjectId
 
-
 # -------------------------
 # Compression helpers
 # -------------------------
@@ -240,12 +239,12 @@ def _schema_sql_xedocs_table(table: str, extra_label_cols: List[str]) -> str:
     # - time interval lookup:  version + interval
     # - common labels (if present)
     index_sql = [
-        f"CREATE INDEX IF NOT EXISTS \
-            {q('idx_' + table + '_version_time')} \
-            ON {q(table)}({q('version')}, {q('time_ns')});",
-        f"CREATE INDEX IF NOT EXISTS \
-            {q('idx_' + table + '_version_interval')} \
-            ON {q(table)}({q('version')}, {q('time_left_ns')}, {q('time_right_ns')});",
+        f"CREATE INDEX IF NOT EXISTS "
+        f"{q('idx_' + table + '_version_time')} "
+        f"ON {q(table)}({q('version')}, {q('time_ns')});",
+        f"CREATE INDEX IF NOT EXISTS "
+        f"{q('idx_' + table + '_version_interval')} "
+        f"ON {q(table)}({q('version')}, {q('time_left_ns')}, {q('time_right_ns')});",
     ]
 
     # Optional label indexes (keep this small to avoid DB bloat)
@@ -787,9 +786,11 @@ def dump_xedocs_collection_to_tables(
         return '"' + name.replace('"', '""') + '"'
 
     placeholders = ",".join(["?"] * len(all_cols))
-    ins = f"INSERT OR REPLACE INTO \
-        {q(table)}({','.join(q(c) for c in all_cols)}) \
-        VALUES ({placeholders})"
+    ins = (
+        f"INSERT OR REPLACE INTO "
+        f"{q(table)}({','.join(q(c) for c in all_cols)}) "
+        f"VALUES ({placeholders})"
+    )
 
     cur = coll.find({}, no_cursor_timeout=True, batch_size=batch_size)
 
@@ -797,8 +798,8 @@ def dump_xedocs_collection_to_tables(
     buf: List[Tuple[Any, ...]] = []
 
     for doc in cur:
-        e = _xedocs_extract(doc, label_cols=extra_cols)
-        row = tuple(e.get(c) for c in all_cols)
+        extracted = _xedocs_extract(doc, label_cols=extra_cols)
+        row = tuple(extracted.get(c) for c in all_cols)
         buf.append(row)
         n += 1
 

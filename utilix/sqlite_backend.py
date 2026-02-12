@@ -1,5 +1,41 @@
 from __future__ import annotations
 
+"""SQLite offline backend for utilix.
+
+This module provides offline access to XENON RunDB and GridFS data using local
+SQLite databases. It allows analysis to continue when MongoDB is unreachable.
+
+Usage:
+    1. Generate SQLite files using mongo_to_sqlite.py (requires MongoDB access)
+    2. Set environment variables:
+        export RUNDB_SQLITE_PATH="/path/to/rundb.sqlite"
+        export XEDOCS_SQLITE_PATH="/path/to/xedocs.sqlite"
+    3. Use utilix normally - offline mode activates automatically
+
+Example:
+    >>> import os
+    >>> os.environ["RUNDB_SQLITE_PATH"] = "/data/rundb.sqlite"
+    >>> os.environ["XEDOCS_SQLITE_PATH"] = "/data/xedocs.sqlite"
+    >>>
+    >>> from utilix import xent_collection
+    >>> runs = xent_collection("runs")  # Uses SQLite if files exist
+    >>> doc = runs.find_one({"number": 12345})
+
+Environment Variables:
+    RUNDB_SQLITE_PATH: Path to RunDB SQLite file (required)
+    XEDOCS_SQLITE_PATH: Path to xedocs SQLite file (required)
+    OFFLINE_COMP: Compression algorithm, 'zstd' or 'zlib' (default: 'zstd')
+    OFFLINE_DEBUG: Enable debug logging, '1' or '0' (default: '0')
+
+Classes:
+    SQLiteConfig: Configuration dataclass for offline mode
+    OfflineGridFS: GridFS-compatible offline file access
+    OfflineSQLiteCollection: pymongo-compatible offline collection access
+
+Functions:
+    _load_sqlite_config: Load configuration from environment variables
+"""
+
 import os
 import sqlite3
 import shutil
@@ -148,7 +184,7 @@ class OfflineGridFS:
             WHERE db_name = ? AND config_name = ?
             ORDER BY uploadDate DESC
             LIMIT 1"""\
-                      ,
+                      ,  # noqa: E502,E203
             (self.gridfs_db_name, config_name),
         ).fetchone()
 
@@ -320,14 +356,19 @@ class OfflineSQLiteCollection:
         """
         Minimal behavior:
           - if filter contains _id, return that doc
+          - if filter contains 'number' (for runs collection), look it up
           - else return first doc (used as connectivity test)
         """
         filter = filter or {}
 
         # _id special case
         if "_id" in filter:
-            ...
+            try:
+                return self._get_by_id(str(filter["_id"]))
+            except KeyError:
+                return None
 
+        # Special case for runs collection with number filter
         if self._coll_name == "runs" and "number" in filter:
             number = int(filter["number"])
             row = self._conn.execute(
@@ -337,6 +378,12 @@ class OfflineSQLiteCollection:
             if row is None:
                 return None
             return self._get_by_id(row["doc_id"])
+
+        # Default: return first doc (connectivity test)
+        row = self._conn.execute(
+            "SELECT doc_bson_z FROM kv_collections WHERE db_name=? AND coll_name=? LIMIT 1",
+            (self.db_name, self._coll_name),
+        ).fetchone()
 
         if row is None:
             return None
@@ -373,9 +420,8 @@ class OfflineSQLiteCollection:
 
         if "_id" in filter:
             row = self._conn.execute(
-                "SELECT COUNT(*) AS n FROM kv_collections \
-                    WHERE db_name=? AND coll_name=? AND doc_id=?"\
-                                                                 ,
+                "SELECT COUNT(*) AS n FROM kv_collections "
+                "WHERE db_name=? AND coll_name=? AND doc_id=?",
                 (self.db_name, self._coll_name, str(filter["_id"])),
             ).fetchone()
             return int(row["n"]) if row else 0
@@ -423,7 +469,7 @@ class _OfflineCursor:
         return self
 
     def skip(self, n):
-        self._docs = self._docs[int(n) :]
+        self._docs = self._docs[int(n) :]  # noqa: E203
         return self
 
     def limit(self, n):
@@ -506,7 +552,7 @@ class _OfflineStreamingCursor:
 _orig_mc = pymongo.MongoClient
 
 
-class MongoClientSpy(_orig_mc):
+class MongoClientSpy(_orig_mc):  # type: ignore[misc,valid-type]
     def __init__(self, *args, **kwargs):
         cfg = _load_sqlite_config()
         if cfg.spy:

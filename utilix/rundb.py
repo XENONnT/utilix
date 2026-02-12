@@ -599,8 +599,9 @@ def _sqlite_collection(
     if database is None:
         database = uconfig.get("RunDB", f"{experiment}_database")
 
+    assert sqlite_config.rundb_sqlite_path is not None  # for mypy
     return OfflineSQLiteCollection(
-        sqlite_path=sqlite_config.sqlite_path,
+        sqlite_path=sqlite_config.rundb_sqlite_path,
         db_name=database,
         coll_name=collection,
         compression=sqlite_config.compression,
