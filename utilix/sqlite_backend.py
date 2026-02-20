@@ -385,7 +385,7 @@ class OfflineSQLiteCollection:
             return None
         return self._decode_row(row)
 
-    def find(self, filter: dict | None = None, *args, **kwargs):     
+    def find(self, filter: dict | None = None, *args, **kwargs):
         filter = filter or {}
 
         # Special-case _id
@@ -456,10 +456,10 @@ class OfflineSQLiteCollection:
         number = filter["number"]
         if type(number) is int:
             return number
-        elif '$gt' in number:
-            return int(number['$gt'])
-        elif '$in' in number:
-            return int(number['$in'][0])
+        elif "$gt" in number:
+            return int(number["$gt"])
+        elif "$in" in number:
+            return int(number["$in"][0])
         else:
             raise ValueError(number)
 
