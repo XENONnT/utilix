@@ -205,8 +205,7 @@ EOF
 # Run the dump (requires MongoDB access)
 python -m utilix.mongo_to_sqlite \
     --spec dump_spec.txt \
-    --rundb-out /path/to/rundb.sqlite \
-    --xedocs-out /path/to/xedocs.sqlite
+    --out /your_path/to_sqlite_files/ \
 ```
 
 This will create two SQLite files:
@@ -214,6 +213,8 @@ This will create two SQLite files:
 - `xedocs.sqlite`: Contains corrections and other xedocs collections
 
 **Note**: The dump process can take significant time depending on data size. Plan accordingly.
+
+You can also change the naming of the files. Conult `python -m utilix.mongo_to_sqlite --help`for more information.
 
 #### 2. Configure Environment Variables
 
