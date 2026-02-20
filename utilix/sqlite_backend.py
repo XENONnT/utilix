@@ -366,7 +366,7 @@ class OfflineSQLiteCollection:
 
         # Special case for runs collection with number filter
         if self._coll_name == "runs" and "number" in filter:
-            number = int(filter["number"])
+            number = self._get_run_number(filter)
             row = self._conn.execute(
                 "SELECT doc_id FROM runs_index WHERE db_name=? AND number=? LIMIT 1",
                 (self.db_name, number),
@@ -385,7 +385,7 @@ class OfflineSQLiteCollection:
             return None
         return self._decode_row(row)
 
-    def find(self, filter: dict | None = None, *args, **kwargs):
+    def find(self, filter: dict | None = None, *args, **kwargs):     
         filter = filter or {}
 
         # Special-case _id
@@ -398,7 +398,7 @@ class OfflineSQLiteCollection:
 
         # Special-case xenonnt.runs by number
         if self._coll_name == "runs" and "number" in filter:
-            number = int(filter["number"])
+            number = self._get_run_number(filter)
             row = self._conn.execute(
                 "SELECT doc_id FROM runs_index WHERE db_name=? AND number=? LIMIT 1",
                 (self.db_name, number),
@@ -423,7 +423,7 @@ class OfflineSQLiteCollection:
             return int(row["n"]) if row else 0
 
         if self._coll_name == "runs" and "number" in filter:
-            number = int(filter["number"])
+            number = self._get_run_number(filter)
             row = self._conn.execute(
                 "SELECT COUNT(*) AS n FROM runs_index WHERE db_name=? AND number=?",
                 (self.db_name, number),
@@ -451,6 +451,17 @@ class OfflineSQLiteCollection:
             if limit is not None and i + 1 >= limit:
                 break
         return out
+
+    def _get_run_number(self, filter):
+        number = filter["number"]
+        if type(number) is int:
+            return number
+        elif '$gt' in number:
+            return int(number['$gt'])
+        elif '$in' in number:
+            return int(number['$in'][0])
+        else:
+            raise ValueError(number)
 
 
 class _OfflineCursor:
