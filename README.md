@@ -197,6 +197,7 @@ First, you need to create SQLite dumps of the MongoDB collections you need. The 
 # Create a spec file listing what to dump
 cat > dump_spec.txt << EOF
 xenonnt:runs
+xenonnt:gps_sync  # Optional, needed for synchronization of NV & MV
 files:GRIDFS
 xedocs:ALL
 corrections:ALL
