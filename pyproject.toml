@@ -28,6 +28,7 @@ xefind = "utilix.scripts.xefind:main"
 [tool.poetry.dependencies]
 python = ">=3.8,<3.13"
 pymongo = "*"
+pytz = "*"
 requests = "*"
 tqdm = "*"
 pandas = "*"
