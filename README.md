@@ -175,6 +175,145 @@ If you need to use different databases or do not want to use the information lis
     >>> xe1t_coll, xe1t_db, xe1t_user, xe1t_pw, xe1t_url = [ask someone]
     >>> xe1t_collection = pymongo_collection(xe1t_coll, database=xe1t_coll, user=xe1t_user, password=xe1t_pw, url=xe1t_url)
 
+## Offline SQLite Backend
+
+For scenarios where network connectivity to MongoDB is unavailable (e.g., working on compute nodes without internet access, traveling, or during database outages), `utilix` provides an **offline SQLite backend** that allows you to continue working with local copies of the database and GridFS files.
+
+### Overview
+
+The offline backend consists of two main components:
+1. **OfflineSQLiteCollection**: A pymongo-compatible wrapper around SQLite databases containing BSON-compressed documents
+2. **OfflineGridFS**: A GridFS-compatible interface for accessing cached files
+
+When properly configured, utilix will automatically use the SQLite backend when both database files are available, and seamlessly fall back to MongoDB when they're not.
+
+### Setup
+
+#### 1. Generate SQLite Database Files
+
+First, you need to create SQLite dumps of the MongoDB collections you need. The `mongo_to_sqlite.py` script (included in utilix) handles this:
+
+```bash
+# Create a spec file listing what to dump
+cat > dump_spec.txt << EOF
+xenonnt:runs
+xenonnt:gps_sync  # Optional, needed for synchronization of NV & MV
+files:GRIDFS
+xedocs:ALL
+corrections:ALL
+EOF
+
+# Run the dump (requires MongoDB access)
+python -m utilix.mongo_to_sqlite \
+    --spec dump_spec.txt \
+    --out /your_path/to_sqlite_files/ \
+```
+
+This will create two SQLite files:
+- `rundb.sqlite`: Contains runs collection, GridFS file index, and file blobs
+- `xedocs.sqlite`: Contains corrections and other xedocs collections
+
+**Note**: The dump process can take significant time depending on data size. Plan accordingly.
+
+You can also change the naming of the files. Conult `python -m utilix.mongo_to_sqlite --help`for more information.
+
+#### 2. Configure Environment Variables
+
+Set the following environment variables to enable offline mode:
+
+```bash
+export RUNDB_SQLITE_PATH="/path/to/rundb.sqlite"
+export XEDOCS_SQLITE_PATH="/path/to/xedocs.sqlite"
+
+# Optional: Set compression algorithm (default: zstd)
+export OFFLINE_COMP="zstd"  # or "zlib"
+
+# Optional: Enable debug logging
+export OFFLINE_DEBUG="1"
+```
+
+**Important**: Both SQLite files must exist and be accessible for offline mode to activate. If either is missing, utilix will fall back to MongoDB automatically.
+
+#### 3. Use Normally
+
+Once configured, your existing code works without modification:
+
+```python
+from utilix import xent_collection
+
+# Automatically uses SQLite if files are present, MongoDB otherwise
+runs = xent_collection("runs")
+doc = runs.find_one({"number": 12345})
+
+# GridFS downloads also work offline
+from utilix.mongo_storage import MongoDownloader
+downloader = MongoDownloader()
+path = downloader.download_single("my_config")
+```
+
+### Features and Limitations
+
+#### Supported Operations
+- ✅ `find_one()` with `_id`, `number`, or no filter
+- ✅ `find()` with basic filters
+- ✅ `count_documents()`
+- ✅ GridFS file listing and downloads
+- ✅ Automatic MD5-based file caching
+- ✅ BSON compression (zstd or zlib)
+
+#### Limitations
+- ⚠️ Complex queries (aggregations, regex, etc.) may not work
+- ⚠️ Cursor operations like `sort()` without `limit()` will raise errors to prevent loading entire collections
+- ⚠️ Write operations are not supported (read-only)
+- ⚠️ The offline database is a snapshot; it won't reflect new data added to MongoDB
+
+### Performance Considerations
+
+- SQLite databases are compressed with zstd (or zlib as fallback), typically achieving 5-10x compression
+- First-time file access requires decompression; subsequent accesses benefit from OS caching
+- For large result sets, queries may be slower than MongoDB due to BSON decompression overhead
+- GridFS files are cached by MD5 hash to avoid re-downloading
+
+### Updating Your Offline Database
+
+The SQLite files are static snapshots. To refresh them with new data:
+
+```bash
+# Re-run the dump script
+python -m utilix.mongo_to_sqlite \
+    --spec dump_spec.txt \
+    --rundb-out /path/to/rundb.sqlite \
+    --xedocs-out /path/to/xedocs.sqlite \
+    --overwrite  # Add this flag to replace existing files
+```
+
+### Troubleshooting
+
+**Problem**: `AttributeError: 'SQLiteConfig' object has no attribute 'sqlite_path'`
+- **Solution**: Update to the latest version of utilix. This was a bug in early versions.
+
+**Problem**: Offline mode not activating
+- **Check**: Both environment variables are set: `echo $RUNDB_SQLITE_PATH $XEDOCS_SQLITE_PATH`
+- **Check**: Both files exist: `ls -lh $RUNDB_SQLITE_PATH $XEDOCS_SQLITE_PATH`
+- **Check**: Set `OFFLINE_DEBUG=1` to see debug messages
+
+**Problem**: `KeyError: Config 'xyz' not found in offline gridfs_files index`
+- **Solution**: The file wasn't included in the dump. Re-dump with the file added to your spec.
+
+**Problem**: Queries return different results than MongoDB
+- **Note**: This shouldn't happen for supported queries. Please report as a bug with example code.
+
+### Environment Variable Reference
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `RUNDB_SQLITE_PATH` | Yes | - | Path to RunDB SQLite file |
+| `XEDOCS_SQLITE_PATH` | Yes | - | Path to xedocs SQLite file |
+| `OFFLINE_COMP` | No | `zstd` | Compression algorithm (`zstd` or `zlib`) |
+| `OFFLINE_DEBUG` | No | `0` | Enable debug logging (`1` or `0`) |
+| `OFFLINE_HARD` | No | `0` | Raise errors instead of warnings on unsupported ops |
+| `PYMONGO_SPY` | No | `0` | Log when pymongo.MongoClient is created (for debugging) |
+
 ## Data processing requests
 You may find yourself missing some data which requires a large amount of resources to process. In these cases, you can submit a processing request to the computing team.
 
