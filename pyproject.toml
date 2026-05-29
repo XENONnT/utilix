@@ -24,6 +24,7 @@ packages = [
 
 [tool.poetry.scripts]
 xefind = "utilix.scripts.xefind:main"
+globus_login = "utilix.scripts.globus_login:main"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.13"
