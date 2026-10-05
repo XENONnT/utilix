@@ -11,7 +11,6 @@ import time
 
 from . import uconfig, logger, io
 
-
 # Config the logger:
 if uconfig is not None:  # type: ignore
     PREFIX = uconfig.get("RunDB", "rundb_api_url", fallback=None)  # type: ignore
